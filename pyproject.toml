@@ -1,0 +1,101 @@
+[project]
+name = "dataclocklib"
+description = "Data Clock charts using matplotlib."
+authors = [{name = "Andrew Ridyard", email = "ridyard12@gmail.com"}]
+maintainers = [{name = "Andrew Ridyard", email = "ridyard12@gmail.com"}]
+version = "0.0.1"
+license = {file = "LICENSE"}
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.10"
+classifiers=[
+    # 3 - Alpha | 4 - Beta | 5 - Production/Stable
+    "Development Status :: 4 - Beta",
+    "Framework :: Matplotlib",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = ["matplotlib", "dataclock"]
+dependencies = ["matplotlib"]
+
+[dependency-groups]
+dev = [
+    "bump-my-version>=0.28.3",
+    "pytest>=8.3.3",
+    "pytest-cov>=6.0.0",
+    "pytest-mpl",
+    "ruff>=0.7.4",
+    "sphinx",
+    "sphinx_rtd_theme",
+    "sphinx-copybutton",
+    "sphinx-autobuild",
+    "sphinx_gallery",
+]
+
+[project.urls]
+Repository = "https://github.com/andyrids/dataclocklib"
+Issues = "https://github.com/andyrids/dataclocklib/issues"
+
+# [project.scripts]
+# CLI = "picoproject.main:app"
+
+[tool.ruff]
+exclude = ["export", "lib"]
+indent-width = 4
+line-length = 79
+
+[tool.ruff.format]
+indent-style = "space"
+line-ending = "auto"
+quote-style = "double"
+
+[tool.ruff.lint]
+select = [
+    "D1",  # pydocstyle
+    "E",   # pycodestyle
+    "ERA", # commented out code
+    "I",   # isort
+    "W",   # pycodestyle
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+tmp_path_retention_count = 1
+tmp_path_retention_policy = "failed"
+
+[tool.bumpversion]
+current_version = "0.0.3"
+commit = true
+commit_args = "--no-verify"
+tag = true
+tag_name = "v{new_version}"
+tag_message = "chore: tag version update {current_version} -> {new_version}."
+allow_dirty = false
+message = "chore: version update {current_version} -> {new_version}."
+
+# [[tool.bumpversion.files]]
+# filename = "src/dataclocklib/__init__.py"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[build-system]
+requires = ["setuptools", "setuptools_scm[toml]", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+# this section enables setuptools_scm
+# git tag -a v0.1.0 -m "First release"
