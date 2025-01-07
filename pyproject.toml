@@ -1,9 +1,9 @@
 [project]
 name = "dataclocklib"
 description = "Data Clock charts using matplotlib."
-authors = [{name = "Andrew Ridyard", email = "ridyard12@gmail.com"}]
-maintainers = [{name = "Andrew Ridyard", email = "ridyard12@gmail.com"}]
-version = "0.0.1"
+authors = [{name = "Andrew Ridyard", email = "andrew.ridyard@proton.me"}]
+maintainers = [{name = "Andrew Ridyard", email = "andrew.ridyard@proton.me"}]
+version = "0.0.3"
 license = {file = "LICENSE"}
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.10"
