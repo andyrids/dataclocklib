@@ -23,6 +23,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = version("dataclocklib")
+try:
+    __version__ = version("dataclocklib")
+except PackageNotFoundError:
+    pass
