@@ -12,8 +12,6 @@ pip install dataclocklib
 
 ## Development Installation
 
-
 ```bash
 pip install -e ".[dev]"
 ```
-
