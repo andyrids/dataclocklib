@@ -51,7 +51,7 @@ jobs:
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
-        if: steps.check_tag.outputs.is_tag == "true"
+        if: steps.check_tag.outputs.is_tag == 'true'
         with:
           path: docs/build/html
 
