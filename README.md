@@ -15,3 +15,5 @@ pip install dataclocklib
 ```bash
 pip install -e ".[dev]"
 ```
+
+uv sync --all-extras
