@@ -75,7 +75,7 @@ jobs:
           python-version-file: "pyproject.toml"
 
       - name: Install Dependencies
-        run: uv sync --all-extras --no-dev
+        run: uv sync --all-extras
 
       - name: Make HTML
         run: |
