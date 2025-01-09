@@ -43,13 +43,19 @@ from pandas import DataFrame, MultiIndex, NamedAgg
 
 from dataclocklib.exceptions import AggregationError, ModeError
 
-ColourMap: TypeAlias = Literal["RdYlGn_r", "CMRmap_r", "inferno_r", "YlGnBu_r", "viridis"]
+ColourMap: TypeAlias = Literal[
+    "RdYlGn_r", "CMRmap_r", "inferno_r", "YlGnBu_r", "viridis"
+]
 VALID_CMAPS: Tuple[ColourMap, ...] = get_args(ColourMap)
 
-Mode: TypeAlias = Literal["YEAR_MONTH", "YEAR_WEEK", "WEEK_DAY", "DOW_HOUR", "DAY_HOUR"]
+Mode: TypeAlias = Literal[
+    "YEAR_MONTH", "YEAR_WEEK", "WEEK_DAY", "DOW_HOUR", "DAY_HOUR"
+]
 VALID_MODES: Tuple[Mode, ...] = get_args(Mode)
 
-Aggregation: TypeAlias = Literal["count", "max", "mean", "median", "min", "sum"]
+Aggregation: TypeAlias = Literal[
+    "count", "max", "mean", "median", "min", "sum"
+]
 VALID_AGGREGATIONS: Tuple[Aggregation, ...] = get_args(Aggregation)
 
 
@@ -218,8 +224,6 @@ def dataclock(
     colorbar_dtype = (np.float64, np.int64)[agg in ("count", "sum")]
     colourbar_ticks = np.linspace(1, agg_max, 5, dtype=colorbar_dtype)
 
-    #colours = ["darkgreen", "gold", "darkred"]
-    #cmap = LinearSegmentedColormap.from_list("colour_map", colours, N=256)#.with_extremes(under='blue')
     cmap = colormaps[cmap_name]
     cmap.set_under("w")
     cmap_norm = Normalize(1, data_graph[agg].max())
@@ -231,7 +235,7 @@ def dataclock(
         ticks=colourbar_ticks,
         shrink=0.6,
         pad=0.2,
-        extend="min"
+        extend="min",
     )
 
     colorbar.ax.tick_params(direction="out")

@@ -27,6 +27,7 @@ Types:
     Aggregation: Keys representing aggregation functions.
     Mode: Keys representing temporal bins used in each chart.
 """
+
 from typing import Iterable
 
 

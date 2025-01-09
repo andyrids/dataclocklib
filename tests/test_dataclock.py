@@ -36,22 +36,19 @@ data_file = tests_directory / "data" / "traffic_data.parquet.gzip"
 traffic_data = pd.read_parquet(data_file.as_posix())
 
 
-# @pytest.mark.mpl_image_compare(filename="test_dataclock.png")
-# def test_example():
-#     """_summary_
+@pytest.mark.mpl_image_compare(filename="test_dataclock.png")
+def test_example():
+    """_summary_
 
-#     >>> pytest --mpl
+    >>> pytest --mpl
 
-#     Returns:
-#         _type_: _description_
-#     """
-#     fig, ax = plt.subplots()
-#     example_function(ax, data, above_color="b", below_color="g")
-#     return fig
+    Returns:
+        _type_: _description_
+    """
+    fig, ax = plt.subplots()
+    example_function(ax, data, above_color="b", below_color="g")
+    return fig
 
+    chart_data, fig, ax = dataclock()
 
-#     chart_data, fig, ax = dataclock(
-
-#     )
-
-#     return fig
+    return fig

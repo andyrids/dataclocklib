@@ -56,7 +56,7 @@ Changelog = "https://github.com/andyrids/dataclocklib/blob/main/CHANGELOG.md"
 # CLI = "picoproject.main:app"
 
 [tool.ruff]
-exclude = ["export", "lib"]
+exclude = []
 indent-width = 4
 line-length = 79
 
@@ -84,7 +84,7 @@ tmp_path_retention_policy = "failed"
 
 [tool.bumpversion]
 current_version = "0.1.3"
-commit = true
+commit = false
 commit_args = "--no-verify"
 tag = true
 tag_name = "v{new_version}"

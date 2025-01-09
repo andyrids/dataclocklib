@@ -6,6 +6,20 @@
 Data Clock Visualisation Library
 ================================
 
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: User Guide
+
+   tutorial
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Reference
+
+   dataclock
+
 This library allows the user to create data clock graphs, using
 the matplotlib Python library.
 
@@ -131,15 +145,14 @@ The table below details the currently supported chart modes and the correspondin
    :alt: Data clock chart
    :align: left
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents
+Tutorial
+--------
 
-   tutorial
+:doc:`tutorial`
+   Follow the dataclock chart tutorial.
 
-API Reference
--------------
+Reference
+---------
 
-.. toctree::
-
-   dataclock
+:doc:`dataclock`
+   Dataclock chart API reference.

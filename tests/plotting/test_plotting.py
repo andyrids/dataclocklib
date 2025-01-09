@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Functions:
     test_baseline: Image comparison test function.
 """
+
 import pathlib
 
 import pandas as pd
@@ -57,9 +58,10 @@ def test_dow_hour_chart():
         mode="DOW_HOUR",
         chart_title="UK Car Accidents 2010",
         chart_subtitle=None,
-        chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data"
+        chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data",
     )
     return fig
+
 
 @pytest.mark.mpl_image_compare
 def test_day_hour_chart():
@@ -76,18 +78,18 @@ def test_day_hour_chart():
     Returns:
         A matplotlib Figure, which is used to generate a baseline image.
     """
+    datetime_start = "Date_Time.ge('2010-12-1 00:00:00')"
+    datetime_stop = "Date_Time.le('2010-12-14 23:59:59')"
 
     chart_data, fig, ax = dataclock(
-        data=traffic_data.query(
-            "(Date_Time >= '2010-12-1 00:00:00') & (Date_Time <= '2010-12-14 23:59:59')"
-        ),
+        data=traffic_data.query(f"{datetime_start} & {datetime_stop}"),
         date_column="Date_Time",
         agg="count",
         agg_column=None,
         mode="DAY_HOUR",
         chart_title="UK Car Accidents 1 - 14 December 2010",
         chart_subtitle=None,
-        chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data"
+        chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data",
     )
     return fig
 
@@ -116,9 +118,6 @@ def test_year_month_chart():
         mode="YEAR_MONTH",
         chart_title="UK Car Accidents 2014 - 2015",
         chart_subtitle=None,
-        chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data"
+        chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data",
     )
     return fig
-
-
-
