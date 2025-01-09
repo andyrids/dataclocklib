@@ -3,7 +3,7 @@ name = "dataclocklib"
 description = "Data clock charts using matplotlib."
 authors = [{name = "Andrew Ridyard", email = "andrew.ridyard@proton.me"}]
 maintainers = [{name = "Andrew Ridyard", email = "andrew.ridyard@proton.me"}]
-dynamic = ["version"]
+dynamic = ["version", "metadata-version"]
 license = { file = "LICENSE" }
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.10"
@@ -50,7 +50,6 @@ Repository = "https://github.com/andyrids/dataclocklib"
 Issues = "https://github.com/andyrids/dataclocklib/issues"
 Documentation = "https://andyrids.github.io/dataclocklib/"
 Changelog = "https://github.com/andyrids/dataclocklib/blob/main/CHANGELOG.md"
-
 
 # [project.scripts]
 # CLI = "picoproject.main:app"
@@ -106,6 +105,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.distutils.metadata]
 metadata_version = "2.4"
+
+[tool.setuptools.dynamic]
+metadata-version = {attr = "'2.4'"}
 
 [tool.setuptools_scm]
 # this section enables setuptools_scm
