@@ -41,6 +41,7 @@ traffic_data = pd.read_parquet(data_file.as_posix())
 
 kwargs = {"baseline_dir": "plotting/baseline", "tolerance": 10}
 
+
 @pytest.mark.mpl_image_compare(**kwargs, filename="test_year_month_chart.png")
 def test_year_month():
     """Test YEAR_MONTH mode chart generation.
@@ -70,8 +71,7 @@ def test_year_month():
     )
 
     manual_aggregation = (
-        traffic_data
-        .query(f"{datetime_start} & {datetime_stop}")
+        traffic_data.query(f"{datetime_start} & {datetime_stop}")
         .assign(year=lambda x: x["Date_Time"].dt.year)
         .assign(month=lambda x: x["Date_Time"].dt.month)
         .groupby(["year", "month"], as_index=False)
@@ -128,8 +128,7 @@ def test_dow_hour():
     )
 
     manual_aggregation = (
-        traffic_data
-        .query("Date_Time.dt.year.eq(2011)")
+        traffic_data.query("Date_Time.dt.year.eq(2011)")
         .assign(dow=lambda x: x["Date_Time"].dt.day_name())
         .assign(hour=lambda x: x["Date_Time"].dt.hour)
         .groupby(["dow", "hour"], as_index=False)
