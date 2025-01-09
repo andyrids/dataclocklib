@@ -1,15 +1,9 @@
 # Data Clock Visualisation Library
 
-[![Python version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/) ![status](https://img.shields.io/badge/status-maintained-yellow.svg)
+[![Python version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/) ![status](https://img.shields.io/badge/status-maintained-yellow.svg) [![PyPi version](https://img.shields.io/pypi/v/dataclocklib.svg)](https://pypi.python.org/pypi/dataclocklib/)
 
 >[!NOTE]
 > This library is a work in progress and is frequently updated.
-
-## TODO
-
-* Publish to PyPI.
-* Add unit tests for chart generation & data aggregation.
-* Add tutorial section to GitHub Page documentation.
 
 ## Introduction
 
