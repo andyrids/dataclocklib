@@ -70,7 +70,7 @@ def test_day_hour_chart():
     This function generates a baseline image, after running the pytest
     suite with the '--mpl-generate-path' option:
 
-    >>> pytest --mpl-generate-path=baseline
+    >>> pytest --mpl-generate-path=tests/plotting/baseline
 
     Generated images are placed in a new directory called 'baseline' and moved
     as a sub-directory of the 'tests/plotting' directory, if they are correct.
@@ -101,7 +101,7 @@ def test_year_month_chart():
     This function generates a baseline image, after running the pytest
     suite with the '--mpl-generate-path' option:
 
-    >>> pytest --mpl-generate-path=baseline
+    >>> pytest --mpl-generate-path=tests/plotting/baseline
 
     Generated images are placed in a new directory called 'baseline' and moved
     as a sub-directory of the 'tests/plotting' directory, if they are correct.
