@@ -106,4 +106,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 # this section enables setuptools_scm
-# git tag -a v0.1.0 -m "chore: tag version update."
+# can use:
+# git tag -a v0.1.4 -m "chore: tag version update."
+# or:
+# bump-my-version patch"
+# git describe will indicate if setuptools_scm can identify your tag
+# update a tag to the current head
+# git tag v0.1.4 -f
