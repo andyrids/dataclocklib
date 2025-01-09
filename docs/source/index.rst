@@ -44,7 +44,7 @@ time, and the data clock on the right shows a seasonal pattern where intensity
 is consistently high in a few wedges.
 
 .. note::
-   Currently these graduated colours range between those defined in the
+   Currently, these graduated colours range between those defined in the
    following **matplotlib.colormaps** names;
    *RdYlGn_r*, *CMRmap_r*, *inferno_r*, *YlGnBu_r* and *viridis*.
 
@@ -55,7 +55,7 @@ The table below details the currently supported chart modes and the correspondin
 +============+==================+==================+===============================================+
 | YEAR_MONTH | Years            | Months           | Years / January - December.                   |
 +------------+------------------+------------------+-----------------------------------------------+
-| YEAR_WEEK  | Years            | Weeks            | Years / weeks 1 - 52                          |
+| YEAR_WEEK  | Years            | Weeks            | Years / weeks 1 - 52.                         |
 +------------+------------------+------------------+-----------------------------------------------+
 | WEEK_DAY   | Weeks            | Days of the week | Weeks 1 - 52 / Monday - Sunday.               |
 +------------+------------------+------------------+-----------------------------------------------+

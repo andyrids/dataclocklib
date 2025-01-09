@@ -1,9 +1,8 @@
 [project]
 name = "dataclocklib"
-description = "Data Clock charts using matplotlib."
+description = "Data clock charts using matplotlib."
 authors = [{name = "Andrew Ridyard", email = "andrew.ridyard@proton.me"}]
 maintainers = [{name = "Andrew Ridyard", email = "andrew.ridyard@proton.me"}]
-# version = "0.0.3"
 dynamic = ["version"]
 license = {file = "LICENSE"}
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -14,7 +13,7 @@ classifiers=[
     "Framework :: Matplotlib",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
@@ -49,6 +48,8 @@ docs = [
 [project.urls]
 Repository = "https://github.com/andyrids/dataclocklib"
 Issues = "https://github.com/andyrids/dataclocklib/issues"
+Documentation = "https://andyrids.github.io/dataclocklib/"
+Changelog = "https://github.com/andyrids/dataclocklib/blob/main/CHANGELOG.md"
 
 
 # [project.scripts]
