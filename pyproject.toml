@@ -101,9 +101,8 @@ search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
 
 [build-system]
-requires = ["setuptools", "setuptools_scm[toml]", "wheel"]
+requires = ["setuptools>=64.0", "setuptools_scm[toml]", "wheel"]
 build-backend = "setuptools.build_meta"
-
 
 [tool.distutils.metadata]
 metadata_version = "2.4"
