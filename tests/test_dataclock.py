@@ -157,3 +157,4 @@ def test_dow_hour():
 
     # return Figure for comparison with baseline reference
     return fig
+    
