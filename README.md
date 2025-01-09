@@ -50,7 +50,7 @@ graph_data, fig, ax = dataclock(
 )
 ```
 
-![Data clock chart](./docs/source/_static/images/sphinx_index_chart_1.png)
+![Data clock chart](https://raw.githubusercontent.com/andyrids/dataclocklib/main/docs/source/_static/images/sphinx_index_chart_1.png)
 
 ```python
 import pandas as pd
@@ -73,7 +73,7 @@ graph_data, fig, ax = dataclock(
 )
 ```
 
-![Data clock chart](./docs/source/_static/images/sphinx_index_chart_2.png)
+![Data clock chart](https://raw.githubusercontent.com/andyrids/dataclocklib/main/docs/source/_static/images/sphinx_index_chart_2.png)
 
 ## Installation
 
