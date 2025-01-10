@@ -1,6 +1,6 @@
 # Data Clock Visualisation Library
 
-[![Python version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/) ![status](https://img.shields.io/badge/status-maintained-yellow.svg) [![PyPi version](https://img.shields.io/pypi/v/dataclocklib.svg)](https://pypi.python.org/pypi/dataclocklib/)
+![PyPI - Version](https://img.shields.io/pypi/v/dataclocklib?style=plastic) ![PyPI - Downloads](https://img.shields.io/pypi/dm/dataclocklib?style=plastic) ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fandyrids%2Fdataclocklib%2Fmain%2Fpyproject.toml&style=plastic) ![GitHub deployments](https://img.shields.io/github/deployments/andyrids/dataclocklib/github-pages?style=plastic&label=sphinx)
 
 >[!NOTE]
 > This library is a work in progress and is frequently updated.
