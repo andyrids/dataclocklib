@@ -56,7 +56,7 @@ Changelog = "https://github.com/andyrids/dataclocklib/blob/main/CHANGELOG.md"
 # CLI = "picoproject.main:app"
 
 [tool.ruff]
-exclude = []
+exclude = ["*.ipynb"]
 indent-width = 4
 line-length = 79
 
