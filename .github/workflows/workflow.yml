@@ -47,12 +47,6 @@ jobs:
       - name: Ruff Format
         run: uv run ruff format --diff
 
-      # - name: Enable Caching
-      #   uses: astral-sh/setup-uv@v5
-      #   with:
-      #     enable-cache: true
-      #     cache-dependency-glob: "uv.lock"
-
   setup-sphinx:
     name: Build Sphinx documentation
     runs-on: ubuntu-latest
