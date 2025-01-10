@@ -53,10 +53,10 @@ release = __version__
 extensions = [
     "sphinx.ext.autodoc",  # include documentation from docstrings
     "sphinx.ext.napoleon",  # support for Google & NumPy docstrings
-    "sphinx.ext.githubpages", # create .nojekyll file for GitHub Pages
+    "sphinx.ext.githubpages",  # create .nojekyll file for GitHub Pages
     "sphinx.ext.viewcode",  # add links to highlighted source code
     "sphinx_rtd_theme",  # enable sphinx read the docs theme
-    "myst_nb", # support Jupyter notebooks as source files
+    "myst_nb",  # support Jupyter notebooks as source files
     # "sphinx.ext.inheritance_diagram",
 ]
 
