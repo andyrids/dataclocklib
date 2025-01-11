@@ -1,0 +1,38 @@
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  setup-uv:
+    name: Install uv & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.5.16"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install Dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Ruff Lint
+        run: uv run ruff check --output-format=github
+
+      - name: Ruff Format
+        run: uv run ruff format --diff

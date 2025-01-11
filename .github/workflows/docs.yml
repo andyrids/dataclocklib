@@ -1,0 +1,76 @@
+# .github/workflows/docs.yml
+name: Documentation
+
+on:
+  push:
+    tags:
+      - "v*"
+  # Manual Build & Deployment Trigger
+  # ---------------------------------
+  # 1. Go to the "Actions" tab in your GitHub repository
+  # 2. Select the "Documentation" workflow
+  # 3. Click "Run workflow"
+  # 4. Select 'github-pages' environment
+  # 5. Click 'Run workflow'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        type: environment
+        required: true
+        default: "github-pages"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-docs:
+      name: Build Documentation
+      runs-on: ubuntu-latest
+
+      steps:
+        - uses: actions/checkout@v4
+
+        - name: Install uv
+          uses: astral-sh/setup-uv@v5
+          with:
+            version: "0.5.16"
+            enable-cache: true
+            cache-dependency-glob: "uv.lock"
+
+        - name: Install Python
+          uses: actions/setup-python@v5
+          with:
+            python-version-file: "pyproject.toml"
+
+        - name: Install Dependencies
+          run: uv sync --all-extras --no-dev
+
+        - name: Make HTML
+          run: |
+            cd docs
+            uv run make html
+        
+        - name: Upload HTML Artifact
+          uses: actions/upload-pages-artifact@v3
+          with:
+            path: docs/build/html
+
+  deploy-docs:
+    name: Deploy Documentation
+    needs: build-docs
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment || 'github-pages' }}
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
