@@ -1,7 +1,7 @@
 # Data Clock Visualisation Library
 
-![PyPI - Version](https://img.shields.io/pypi/v/dataclocklib?style=plastic) ![PyPI - Downloads](https://img.shields.io/pypi/dm/dataclocklib?style=plastic) ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fandyrids%2Fdataclocklib%2Fmain%2Fpyproject.toml&style=plastic) ![GitHub deployments](https://img.shields.io/github/deployments/andyrids/dataclocklib/github-pages?style=plastic&label=sphinx)
-
+![PyPI - Version](https://img.shields.io/pypi/v/dataclocklib?style=plastic) ![PyPI - Downloads](https://img.shields.io/pypi/dm/dataclocklib?style=plastic) ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fandyrids%2Fdataclocklib%2Fmain%2Fpyproject.toml&style=plastic) ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/andyrids/dataclocklib/ci.yml?branch=main&style=plastic&logo=pytest&logoColor=%230A9EDC&label=pytest)
+![GitHub deployments](https://img.shields.io/github/deployments/andyrids/dataclocklib/github-pages?style=plastic&&logo=sphinx&label=sphinx&logoColor=%000000)
 >[!NOTE]
 > This library is a work in progress and is frequently updated.
 
