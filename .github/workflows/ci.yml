@@ -36,3 +36,6 @@ jobs:
 
       - name: Ruff Format
         run: uv run ruff format --diff
+
+      - name: Unit Tests
+        run: uv run pytest --mpl --cov-report term --cov=dataclocklib
