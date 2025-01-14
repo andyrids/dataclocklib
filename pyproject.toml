@@ -52,9 +52,6 @@ Issues = "https://github.com/andyrids/dataclocklib/issues"
 Documentation = "https://andyrids.github.io/dataclocklib/"
 Changelog = "https://github.com/andyrids/dataclocklib/blob/main/CHANGELOG.md"
 
-# [project.scripts]
-# CLI = "picoproject.main:app"
-
 [tool.ruff]
 exclude = ["*.ipynb"]
 indent-width = 4
@@ -84,7 +81,7 @@ tmp_path_retention_policy = "failed"
 
 [tool.bumpversion]
 current_version = "0.1.5"
-commit = false
+commit = true
 commit_args = "--no-verify"
 tag = true
 tag_name = "v{new_version}"

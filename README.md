@@ -83,6 +83,12 @@ You can install using `pip`:
 python -m pip install dataclocklib
 ```
 
+To install from GitHub use:
+
+```bash
+python -m pip install git+https://github.com/andyrids/dataclocklib.git
+```
+
 ## Development Installation
 
 Astral **uv** is used as the Python package manager. To install **uv** see the installation
@@ -112,15 +118,4 @@ Activate the virtual environment:
 ```bash
 cd docs
 make html
-```
-
-## Dependencies
-
-```text
-dataclocklib
-├── matplotlib v3.10.0
-├── pandas[parquet] v2.2.3
-├── sphinx v8.1.3 (extra: docs)
-├── sphinx-autobuild v2024.10.3 (extra: docs)
-└── sphinx-rtd-theme v3.0.2 (extra: docs)
 ```
