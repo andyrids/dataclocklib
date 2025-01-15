@@ -30,6 +30,7 @@ Types:
 from __future__ import annotations
 
 import calendar
+from collections import defaultdict
 from typing import Literal, Optional, Tuple, TypeAlias, get_args
 
 import matplotlib.pyplot as plt
@@ -42,6 +43,7 @@ from matplotlib.figure import Figure
 from pandas import DataFrame, MultiIndex, NamedAgg
 
 from dataclocklib.exceptions import AggregationError, ModeError
+from dataclocklib.utility import add_text
 
 ColourMap: TypeAlias = Literal[
     "RdYlGn_r", "CMRmap_r", "inferno_r", "YlGnBu_r", "viridis"
@@ -68,7 +70,9 @@ def dataclock(
     cmap_name: ColourMap = "RdYlGn_r",
     chart_title: Optional[str] = None,
     chart_subtitle: Optional[str] = None,
+    chart_period: Optional[str] = None,
     chart_source: Optional[str] = None,
+    default_text: bool = True,
 ) -> tuple[DataFrame, Figure, Axes]:
     """Create a data clock chart from a pandas DataFrame.
 
@@ -92,47 +96,58 @@ def dataclock(
             'inferno_r', 'YlGnBu_r' & 'viridis'.
         chart_title (str, optional): Chart title.
         chart_subtitle (str, optional): Chart subtitle.
+        chart_period (str, optional): Chart reporting period.
         chart_source (str, optional): Chart data source.
+        default_text (bool, optional): Flag to generating default chart
+            annotations for the chart_title ('Data Clock Chart') and
+            chart_subtitle ('[agg] by [period] (rings) & [period] (wedges)').
 
     Raises:
         AggregationError: Incompatible agg_column dtype & agg combination.
         ModeError: Unexpected mode value is passed.
+        ValueError: Incompatible date_column dtype or empty DataFrame.
 
     Returns:
         A tuple containing a DataFrame with the aggregate values used to
         create the chart, the matplotlib chart Figure and Axes objects.
     """
-    # dict map for ring & wedge features based on mode
-    mode_map = {
-        "YEAR_MONTH": {  # year | January - December
-            "ring": data[date_column].dt.strftime("%Y"),
-            "wedge": data[date_column].dt.strftime("%B"),
-        },
-        "YEAR_WEEK": {  # year | weeks 1 - 52
-            "ring": data[date_column].dt.strftime("%Y"),
-            "wedge": data[date_column].dt.isocalendar().week,
-        },
-        "WEEK_DAY": {  # weeks 1 - 52 | Monday - Sunday
-            "ring": data[date_column].dt.strftime("%Y%W"),
-            "wedge": data[date_column].dt.strftime("%A"),
-        },
-        "DOW_HOUR": {  # days 1 - 7 (Monday - Sunday) | 00:00 - 23:00
-            "ring": data[date_column].dt.strftime("%w").replace("0", "7"),
-            "wedge": data[date_column].dt.hour,
-        },
-        "DAY_HOUR": {  # days 1 - 365 | 00:00 - 23:00
-            "ring": data[date_column].dt.strftime("%Y%j"),
-            "wedge": data[date_column].dt.hour,
-        },
-    }
-    if mode not in mode_map:
+    if data.empty:
+        raise ValueError(f"DataFrame is empty.")
+    if data[date_column].dtype.name != "datetime64[ns]":
+        raise ValueError(f"date_column dtype is not datetime64[ns].")
+    if mode not in VALID_MODES:
         raise ModeError(mode, mode_map.keys())
-
     if agg not in VALID_AGGREGATIONS:
         raise AggregationError(agg, agg_column)
-
     if agg_column is None and agg != "count":
         raise AggregationError(agg, agg_column)
+
+    # dict map for ring & wedge features based on mode
+    mode_map = defaultdict(dict)
+    # year | January - December
+    if mode == "YEAR_MONTH":
+        mode_map[mode]["ring"] = data[date_column].dt.year
+        mode_map[mode]["wedge"] = data[date_column].dt.month_name()
+    # year | weeks 1 - 52
+    if mode == "YEAR_WEEK":
+        mode_map[mode]["ring"] = data[date_column].dt.year
+        week = data[date_column].dt.isocalendar().week
+        week[week == 53] = 52
+        mode_map[mode]["wedge"] = week
+    # weeks 1 - 52 | Monday - Sunday
+    if mode == "WEEK_DAY":
+        week = data[date_column].dt.isocalendar().week
+        year = data[date_column].dt.year
+        mode_map[mode]["ring"] = week + year * 100
+        mode_map[mode]["wedge"] = data[date_column].dt.day_name()
+    # days 1 - 7 (Monday - Sunday) | 00:00 - 23:00
+    if mode == "DOW_HOUR":
+        mode_map[mode]["ring"] = data[date_column].dt.day_of_week
+        mode_map[mode]["wedge"] = data[date_column].dt.hour
+    # days 1 - 365 | 00:00 - 23:00
+    if mode == "DAY_HOUR":
+        mode_map[mode]["ring"] = data[date_column].dt.strftime("%Y%j")
+        mode_map[mode]["wedge"] = data[date_column].dt.hour
 
     data = data.assign(**mode_map[mode]).astype({"ring": "int64"})
 
@@ -141,8 +156,8 @@ def dataclock(
         "YEAR_MONTH": tuple(calendar.month_name[1:]),
         "YEAR_WEEK": range(1, 53),
         "WEEK_DAY": tuple(calendar.day_name),
-        "DAY_HOUR": range(0, 24),
         "DOW_HOUR": range(0, 24),
+        "DAY_HOUR": range(0, 24),
     }
 
     index_names = ["ring", "wedge"]
@@ -191,7 +206,7 @@ def dataclock(
     theta = np.linspace(0, 2 * np.pi, n_wedges, endpoint=False)
 
     # width of each bar (radians)
-    width = 2 * np.pi / n_wedges * 1
+    width = 2 * np.pi / n_wedges
 
     unique_rings = data_graph["ring"].unique()
 
@@ -226,7 +241,7 @@ def dataclock(
 
     cmap = colormaps[cmap_name]
     cmap.set_under("w")
-    cmap_norm = Normalize(1, data_graph[agg].max())
+    cmap_norm = Normalize(1, agg_max)
 
     colorbar = fig.colorbar(
         ScalarMappable(norm=cmap_norm, cmap=cmap),
@@ -269,66 +284,87 @@ def dataclock(
 
     for ring_position, ring in enumerate(unique_rings):
         view = data_graph.loc[data_graph["ring"] == ring]
-        for wedge_position, wedge in enumerate(theta):
-            count = view[agg].iat[wedge_position]
-            colour = cmap(cmap_norm(count))
+        graduated_colors = tuple(map(lambda x: cmap(cmap_norm(x)), view[agg]))
 
-            # plot each wedge as a separate bar along each ring
-            bar = ax.bar(
-                # wedge/angle
-                wedge,
-                # height
-                1,
-                # bar aligned to wedge
-                align="edge",
-                # width in radians
-                width=width,
-                # ring to place bar
-                bottom=start_position + ring_position,
-                # transparency
-                alpha=0.8,
-                # color map
-                color=colour,
-            )
+        ax.bar(
+            # wedges/angles
+            theta,
+            # height
+            1,
+            # bars aligned to wedge
+            align="edge",
+            # width in radians
+            width=width,
+            # ring to place bar
+            bottom=start_position + ring_position,
+            # transparency
+            alpha=0.8,
+            # color map
+            color=graduated_colors,
+        )
 
-    chart_title = chart_title or "Dataclock Chart"
+    # generate default text for missing chart_title & chart_subtitle values
+    if default_text:
+        if chart_title is None:
+            chart_title = "Data Clock Chart"
 
     chart_subtitle_map = {
-        "YEAR_MONTH": f"{agg.title()} by year & month",
-        "YEAR_WEEK": f"{agg.title()} by year & week of year",
-        "WEEK_DAY": f"{agg.title()} by week of year & day of week",
-        "DOW_HOUR": f"{agg.title()} by day of week & hour of day",
-        "DAY_HOUR": f"{agg.title()} by day of year & hour of day",
+        "YEAR_MONTH": "year (rings) & month (wedges)",
+        "YEAR_WEEK": "year (rings) & week of year (wedges)",
+        "WEEK_DAY": "week of year (rings) & day of week (wedges)",
+        "DOW_HOUR": "day of week (rings) & hour of day (wedges)",
+        "DAY_HOUR": "day of year (rings) & hour of day (wedges)",
     }
-    chart_subtitle = chart_subtitle or chart_subtitle_map[mode]
+    if chart_subtitle is None:
+        chart_subtitle = f"{agg.title()} by {chart_subtitle_map[mode]}"
 
-    # consistent kwargs for text objects
-    text_kwargs = {"ha": "left", "transform": fig.transFigure}
-
-    # create chart title, subtitle & source information
-    ax.text(
+    # chart title text
+    add_text(
+        ax=ax,
         x=0.12,
         y=0.93,
-        s=chart_title,
+        text=chart_title,
         fontsize=14,
         weight="bold",
         alpha=0.8,
-        **text_kwargs,
+        ha="left",
+        transform=fig.transFigure
     )
 
-    ax.text(
-        x=0.12, y=0.90, s=chart_subtitle, fontsize=12, alpha=0.8, **text_kwargs
+    # chart subtitle text
+    add_text(
+        ax=ax,
+        x=0.12,
+        y=0.90,
+        text=chart_subtitle,
+        fontsize=12,
+        alpha=0.8,
+        ha="left",
+        transform=fig.transFigure
     )
 
-    if chart_source:
-        # Set source text
-        ax.text(
-            x=0.1,
-            y=0.12,
-            s=f"Source: {chart_source}",
-            fontsize=10,
-            alpha=0.7,
-            **text_kwargs,
-        )
+    # chart reporting period text
+    add_text(
+        ax=ax,
+        x=0.12,
+        y=0.87,
+        text=chart_period,
+        fontsize=10,
+        alpha=0.7,
+        ha="left",
+        transform=fig.transFigure
+    )
+
+    # chart source text
+    add_text(
+        ax=ax,
+        x=0.1,
+        y=0.15,
+        text=chart_source,
+        fontsize=10,
+        alpha=0.7,
+        ha="left",
+        transform=fig.transFigure
+    )
 
     return data_graph, fig, ax
