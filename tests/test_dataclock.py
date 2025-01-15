@@ -67,7 +67,7 @@ def test_year_month_default() -> Figure:
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True
+        default_text=True,
     )
     return fig
 
@@ -97,7 +97,7 @@ def test_week_day_default() -> Figure:
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True
+        default_text=True,
     )
     return fig
 
@@ -124,7 +124,7 @@ def test_dow_hour_default() -> Figure:
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True
+        default_text=True,
     )
     return fig
 
@@ -154,12 +154,12 @@ def test_day_hour_default() -> Figure:
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True
+        default_text=True,
     )
     return fig
 
 
-def test_chart_annotation(): 
+def test_chart_annotation():
     """Test chart annotation text.
 
     >>> pytest --mpl
@@ -179,7 +179,7 @@ def test_chart_annotation():
         chart_subtitle=chart_subtitle,
         chart_period=chart_period,
         chart_source=chart_source,
-        default_text=False
+        default_text=False,
     )
 
     axis_text_children = filter(
@@ -199,14 +199,13 @@ def test_chart_annotation():
     assert chart_source in axis_text_str
 
 
-def test_chart_aggregation(): 
+def test_chart_aggregation():
     """Test chart aggregation calculations.
 
     >>> pytest --mpl
     """
     manual_data = (
-        traffic_data
-        .assign(year=lambda x: x["Date_Time"].dt.year)
+        traffic_data.assign(year=lambda x: x["Date_Time"].dt.year)
         .assign(month=lambda x: x["Date_Time"].dt.month)
         .assign(week=lambda x: x["Date_Time"].dt.isocalendar().week)
         .assign(woy=lambda x: x["week"] + x["year"] * 100)
@@ -235,13 +234,11 @@ def test_chart_aggregation():
             chart_subtitle=None,
             chart_period=None,
             chart_source=None,
-            default_text=False
+            default_text=False,
         )
 
-        manual_aggregation = (
-            manual_data
-            .groupby(columns, as_index=False)
-            .agg(count=pd.NamedAgg("Date_Time", "count"))
+        manual_aggregation = manual_data.groupby(columns, as_index=False).agg(
+            count=pd.NamedAgg("Date_Time", "count")
         )
 
         assert manual_aggregation["count"].max() == chart_data["count"].max()

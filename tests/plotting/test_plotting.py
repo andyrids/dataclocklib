@@ -120,7 +120,7 @@ def test_baseline_dow_hour_chart():
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True
+        default_text=True,
     )
     return fig
 
@@ -153,6 +153,6 @@ def test_baseline_day_hour_chart():
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True
+        default_text=True,
     )
     return fig

@@ -328,7 +328,7 @@ def dataclock(
         weight="bold",
         alpha=0.8,
         ha="left",
-        transform=fig.transFigure
+        transform=fig.transFigure,
     )
 
     # chart subtitle text
@@ -340,7 +340,7 @@ def dataclock(
         fontsize=12,
         alpha=0.8,
         ha="left",
-        transform=fig.transFigure
+        transform=fig.transFigure,
     )
 
     # chart reporting period text
@@ -352,7 +352,7 @@ def dataclock(
         fontsize=10,
         alpha=0.7,
         ha="left",
-        transform=fig.transFigure
+        transform=fig.transFigure,
     )
 
     # chart source text
@@ -364,7 +364,7 @@ def dataclock(
         fontsize=10,
         alpha=0.7,
         ha="left",
-        transform=fig.transFigure
+        transform=fig.transFigure,
     )
 
     return data_graph, fig, ax

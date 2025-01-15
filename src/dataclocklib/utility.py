@@ -26,6 +26,7 @@ Types:
     Aggregation: Keys representing aggregation functions.
     Mode: Keys representing temporal bins used in each chart.
 """
+
 from typing import Literal, Optional, Tuple, get_args
 
 from matplotlib.axes import Axes
@@ -36,12 +37,8 @@ VALID_STYLES: Tuple[FontStyle, ...] = get_args(FontStyle)
 
 
 def add_text(
-    ax: Axes,
-    x: int,
-    y: int,
-    text: Optional[str] = None,
-    **kwargs
-    ) -> Text:
+    ax: Axes, x: int, y: int, text: Optional[str] = None, **kwargs
+) -> Text:
     """Annotate a position on an axis denoted by xy with text.
 
     Args:
