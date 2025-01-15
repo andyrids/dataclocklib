@@ -7,15 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Added | Changed | Deprecated | Removed | Fixed -->
 
-## [0.1.6] - 2025-01-11
+## [0.1.7] - 2025-01-15
 
 ### Added
 
-- ...
+- Extra unit tests:
+  - Test aggregation values for different chart modes.
+  - Test figure generation for different chart modes.
+  - Test custom chart annotation text values.
+- Error handling for empty DataFrame & wrong dtype.
 
 ### Changed
 
-- CI/CD improvements
+- Parameter 'default_text' triggers default chart title and subtitle annotations if chart_title & chart_subtitle are None.
+- Parameter 'chart_period' for optional annotation below subtitle for dataset reporting period.
+- Raises ValueError if data[date_column] Series does not have not a 'datetime64[ns]' dtype.
+- Raises ValueError if data is an empty DataFrame.
+
+### Fixed
+
+- Ring & wedge value generation inefficiencies (~75% improvement).
+- Redundant inner loop for wedge bar creation.
+- Divide by zero error when passed an empty DataFrame.
+- Leap year ring values changed from 53 to 52 in 'YEAR_WEEK' mode.
+
+## [0.1.6] - 2025-01-14
+
+### Changed
+
+- Tutorial updates & improvements.
 
 ## [0.1.5] - 2025-01-10
 
