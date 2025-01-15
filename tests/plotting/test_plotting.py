@@ -36,13 +36,73 @@ traffic_data = pd.read_parquet(data_file.as_posix())
 
 
 @pytest.mark.mpl_image_compare
-def test_dow_hour_chart():
+def test_baseline_year_month_chart():
     """Image comparison test function.
 
     This function generates a baseline image, after running the pytest
     suite with the '--mpl-generate-path' option:
 
-    >>> pytest --mpl-generate-path=baseline
+    >>> pytest --mpl-generate-path=tests/plotting/baseline
+
+    Generated images are placed in a new directory called 'baseline' and moved
+    as a sub-directory of the 'tests/plotting' directory, if they are correct.
+
+    Returns:
+        A matplotlib Figure, which is used to generate a baseline image.
+    """
+    chart_data, fig, ax = dataclock(
+        data=traffic_data.query("Date_Time.dt.year.ge(2014)"),
+        date_column="Date_Time",
+        agg="count",
+        agg_column=None,
+        mode="YEAR_MONTH",
+        chart_title=None,
+        chart_subtitle=None,
+        chart_period=None,
+        chart_source=None,
+    )
+    return fig
+
+
+@pytest.mark.mpl_image_compare
+def test_baseline_week_day_chart():
+    """Image comparison test function.
+
+    This function generates a baseline image, after running the pytest
+    suite with the '--mpl-generate-path' option:
+
+    >>> pytest --mpl-generate-path=tests/plotting/baseline
+
+    Generated images are placed in a new directory called 'baseline' and moved
+    as a sub-directory of the 'tests/plotting' directory, if they are correct.
+
+    Returns:
+        A matplotlib Figure, which is used to generate a baseline image.
+    """
+    datetime_start = "Date_Time.ge('2010-12-1 00:00:00')"
+    datetime_stop = "Date_Time.le('2010-12-31 23:59:59')"
+    chart_data, fig, ax = dataclock(
+        data=traffic_data.query(f"{datetime_start} & {datetime_stop}"),
+        date_column="Date_Time",
+        agg="count",
+        agg_column=None,
+        mode="WEEK_DAY",
+        chart_title=None,
+        chart_subtitle=None,
+        chart_period=None,
+        chart_source=None,
+    )
+    return fig
+
+
+@pytest.mark.mpl_image_compare
+def test_baseline_dow_hour_chart():
+    """Image comparison test function.
+
+    This function generates a baseline image, after running the pytest
+    suite with the '--mpl-generate-path' option:
+
+    >>> pytest --mpl-generate-path=tests/plotting/baseline
 
     Generated images are placed in a new directory called 'baseline' and moved
     as a sub-directory of the 'tests/plotting' directory, if they are correct.
@@ -56,15 +116,17 @@ def test_dow_hour_chart():
         agg="count",
         agg_column=None,
         mode="DOW_HOUR",
-        chart_title="UK Car Accidents 2010",
+        chart_title=None,
         chart_subtitle=None,
-        chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data",
+        chart_period=None,
+        chart_source=None,
+        default_text=True
     )
     return fig
 
 
 @pytest.mark.mpl_image_compare
-def test_day_hour_chart():
+def test_baseline_day_hour_chart():
     """Image comparison test function.
 
     This function generates a baseline image, after running the pytest
@@ -87,37 +149,10 @@ def test_day_hour_chart():
         agg="count",
         agg_column=None,
         mode="DAY_HOUR",
-        chart_title="UK Car Accidents 1 - 14 December 2010",
+        chart_title=None,
         chart_subtitle=None,
-        chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data",
-    )
-    return fig
-
-
-@pytest.mark.mpl_image_compare
-def test_year_month_chart():
-    """Image comparison test function.
-
-    This function generates a baseline image, after running the pytest
-    suite with the '--mpl-generate-path' option:
-
-    >>> pytest --mpl-generate-path=tests/plotting/baseline
-
-    Generated images are placed in a new directory called 'baseline' and moved
-    as a sub-directory of the 'tests/plotting' directory, if they are correct.
-
-    Returns:
-        A matplotlib Figure, which is used to generate a baseline image.
-    """
-
-    chart_data, fig, ax = dataclock(
-        data=traffic_data.query("Date_Time.dt.year.ge(2014)"),
-        date_column="Date_Time",
-        agg="count",
-        agg_column=None,
-        mode="YEAR_MONTH",
-        chart_title="UK Car Accidents 2014 - 2015",
-        chart_subtitle=None,
-        chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data",
+        chart_period=None,
+        chart_source=None,
+        default_text=True
     )
     return fig

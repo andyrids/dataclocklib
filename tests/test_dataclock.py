@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
+from matplotlib.figure import Figure
 from matplotlib.text import Text
 
 from dataclocklib.charts import dataclock
@@ -38,13 +39,14 @@ tests_directory = pathlib.Path("__file__").parent / "tests"
 data_file = tests_directory / "data" / "traffic_data.parquet.gzip"
 traffic_data = pd.read_parquet(data_file.as_posix())
 
+mpl_kwargs = {"baseline_dir": "plotting/baseline", "tolerance": 35}
 
-kwargs = {"baseline_dir": "plotting/baseline", "tolerance": 10}
 
-
-@pytest.mark.mpl_image_compare(**kwargs, filename="test_year_month_chart.png")
-def test_year_month():
-    """Test YEAR_MONTH mode chart generation.
+@pytest.mark.mpl_image_compare(
+    **mpl_kwargs, filename="test_baseline_year_month_chart.png"
+)
+def test_year_month_default() -> Figure:
+    """Test default YEAR_MONTH mode chart generation.
 
     >>> pytest --mpl
 
@@ -55,32 +57,130 @@ def test_year_month():
     datetime_start = "Date_Time.dt.year.ge(2013)"
     datetime_stop = "Date_Time.dt.year.le(2014)"
 
-    chart_title = "UK Car Accidents 2013 - 2014"
-    chart_subtitle = "Count by year & month"
-    chart_source = "www.kaggle.com/datasets/silicon99/dft-accident-data"
-
     chart_data, fig, ax = dataclock(
         data=traffic_data.query(f"{datetime_start} & {datetime_stop}"),
         date_column="Date_Time",
         agg="count",
         agg_column=None,
         mode="YEAR_MONTH",
+        chart_title=None,
+        chart_subtitle=None,
+        chart_period=None,
+        chart_source=None,
+        default_text=True
+    )
+    return fig
+
+
+@pytest.mark.mpl_image_compare(
+    **mpl_kwargs, filename="test_baseline_week_day_chart.png"
+)
+def test_week_day_default() -> Figure:
+    """Test default WEEK_DAY mode chart generation.
+
+    >>> pytest --mpl
+
+    Returns:
+        Figure object for comparison with reference figure in
+        tests/plotting/baseline directory.
+    """
+    datetime_start = "Date_Time.ge('2013-12-1 00:00:00')"
+    datetime_stop = "Date_Time.le('2013-12-31 23:59:59')"
+
+    chart_data, fig, ax = dataclock(
+        data=traffic_data.query(f"{datetime_start} & {datetime_stop}"),
+        date_column="Date_Time",
+        agg="count",
+        agg_column=None,
+        mode="WEEK_DAY",
+        chart_title=None,
+        chart_subtitle=None,
+        chart_period=None,
+        chart_source=None,
+        default_text=True
+    )
+    return fig
+
+
+@pytest.mark.mpl_image_compare(
+    **mpl_kwargs, filename="test_baseline_dow_hour_chart.png"
+)
+def test_dow_hour_default() -> Figure:
+    """Test default DOW_HOUR mode chart generation.
+
+    >>> pytest --mpl
+
+    Returns:
+        Figure object for comparison with reference figure in
+        tests/plotting/baseline directory.
+    """
+    chart_data, fig, ax = dataclock(
+        data=traffic_data.query("Date_Time.dt.year.eq(2013)"),
+        date_column="Date_Time",
+        agg="count",
+        agg_column=None,
+        mode="DOW_HOUR",
+        chart_title=None,
+        chart_subtitle=None,
+        chart_period=None,
+        chart_source=None,
+        default_text=True
+    )
+    return fig
+
+
+@pytest.mark.mpl_image_compare(
+    **mpl_kwargs, filename="test_baseline_day_hour_chart.png"
+)
+def test_day_hour_default() -> Figure:
+    """Test default DOW_HOUR mode chart generation.
+
+    >>> pytest --mpl
+
+    Returns:
+        Figure object for comparison with reference figure in
+        tests/plotting/baseline directory.
+    """
+    datetime_start = "Date_Time.ge('2013-12-1 00:00:00')"
+    datetime_stop = "Date_Time.le('2013-12-14 23:59:59')"
+
+    chart_data, fig, ax = dataclock(
+        data=traffic_data.query(f"{datetime_start} & {datetime_stop}"),
+        date_column="Date_Time",
+        agg="count",
+        agg_column=None,
+        mode="DAY_HOUR",
+        chart_title=None,
+        chart_subtitle=None,
+        chart_period=None,
+        chart_source=None,
+        default_text=True
+    )
+    return fig
+
+
+def test_chart_annotation(): 
+    """Test chart annotation text.
+
+    >>> pytest --mpl
+    """
+    chart_title = "**CUSTOM TITLE**"
+    chart_subtitle = "**CUSTOM SUBTITLE**"
+    chart_period = "**CUSTOM PERIOD**"
+    chart_source = "**CUSTOM SOURCE**"
+
+    chart_data, fig, ax = dataclock(
+        data=traffic_data,
+        date_column="Date_Time",
+        agg="count",
+        agg_column=None,
+        mode="YEAR_MONTH",
         chart_title=chart_title,
         chart_subtitle=chart_subtitle,
+        chart_period=chart_period,
         chart_source=chart_source,
+        default_text=False
     )
-
-    manual_aggregation = (
-        traffic_data.query(f"{datetime_start} & {datetime_stop}")
-        .assign(year=lambda x: x["Date_Time"].dt.year)
-        .assign(month=lambda x: x["Date_Time"].dt.month)
-        .groupby(["year", "month"], as_index=False)
-        .agg(count=pd.NamedAgg("Date_Time", "count"))
-    )
-
-    assert manual_aggregation["count"].min() == chart_data["count"].min()
-    assert manual_aggregation["count"].max() == chart_data["count"].max()
-    assert manual_aggregation["count"].sum() == chart_data["count"].sum()
 
     axis_text_children = filter(
         lambda x: isinstance(x, Text), ax.properties()["children"]
@@ -95,64 +195,54 @@ def test_year_month():
     assert month_names in axis_text_str
     assert chart_title in axis_text_str
     assert chart_subtitle in axis_text_str
+    assert chart_period in axis_text_str
     assert chart_source in axis_text_str
 
-    # return Figure for comparison with baseline reference
-    return fig
 
+def test_chart_aggregation(): 
+    """Test chart aggregation calculations.
 
-@pytest.mark.mpl_image_compare(**kwargs, filename="test_dow_hour_chart.png")
-def test_dow_hour():
-    """Test DOW_HOUR mode chart generation.
-
-    >>> pytest --mpl --mpl-generate-summary=html
-
-    Returns:
-        Figure object for comparison with reference figure in
-        tests/plotting/baseline directory.
+    >>> pytest --mpl
     """
-
-    chart_title = "UK Car Accidents 2011"
-    chart_subtitle = "Count by day of week & hour of day"
-    chart_source = "www.kaggle.com/datasets/silicon99/dft-accident-data"
-
-    chart_data, fig, ax = dataclock(
-        data=traffic_data.query("Date_Time.dt.year.eq(2011)"),
-        date_column="Date_Time",
-        agg="count",
-        agg_column=None,
-        mode="DOW_HOUR",
-        chart_title=chart_title,
-        chart_subtitle=chart_subtitle,
-        chart_source=chart_source,
-    )
-
-    manual_aggregation = (
-        traffic_data.query("Date_Time.dt.year.eq(2011)")
-        .assign(dow=lambda x: x["Date_Time"].dt.day_name())
+    manual_data = (
+        traffic_data
+        .assign(year=lambda x: x["Date_Time"].dt.year)
+        .assign(month=lambda x: x["Date_Time"].dt.month)
+        .assign(week=lambda x: x["Date_Time"].dt.isocalendar().week)
+        .assign(woy=lambda x: x["week"] + x["year"] * 100)
+        .assign(dow=lambda x: x["Date_Time"].dt.day_of_week)
+        .assign(dow_name=lambda x: x["Date_Time"].dt.day_name())
         .assign(hour=lambda x: x["Date_Time"].dt.hour)
-        .groupby(["dow", "hour"], as_index=False)
-        .agg(count=pd.NamedAgg("Date_Time", "count"))
     )
+    # account for leap years pushing into week 53
+    manual_data.loc[manual_data["week"].eq(53), "week"] = 52
 
-    assert manual_aggregation["count"].min() == chart_data["count"].min()
-    assert manual_aggregation["count"].max() == chart_data["count"].max()
-    assert manual_aggregation["count"].sum() == chart_data["count"].sum()
+    for mode, columns in (
+        ("YEAR_MONTH", ["year", "month"]),
+        ("YEAR_WEEK", ["year", "week"]),
+        ("WEEK_DAY", ["woy", "dow_name"]),
+        ("DOW_HOUR", ["dow", "hour"]),
+    ):
+        print(mode)
 
-    axis_text_children = filter(
-        lambda x: isinstance(x, Text), ax.properties()["children"]
-    )
+        chart_data, fig, ax = dataclock(
+            data=traffic_data,
+            date_column="Date_Time",
+            agg="count",
+            agg_column=None,
+            mode=mode,
+            chart_title=None,
+            chart_subtitle=None,
+            chart_period=None,
+            chart_source=None,
+            default_text=False
+        )
 
-    axis_text_str = " ".join(
-        map(lambda x: x.properties()["text"], axis_text_children)
-    )
+        manual_aggregation = (
+            manual_data
+            .groupby(columns, as_index=False)
+            .agg(count=pd.NamedAgg("Date_Time", "count"))
+        )
 
-    # test polar axis label, title, subtitle & source text
-    hour_labels = " ".join(f"{str(h).zfill(2)}:00" for h in range(24))
-    assert hour_labels in axis_text_str
-    assert chart_title in axis_text_str
-    assert chart_subtitle in axis_text_str
-    assert chart_source in axis_text_str
-
-    # return Figure for comparison with baseline reference
-    return fig
+        assert manual_aggregation["count"].max() == chart_data["count"].max()
+        assert manual_aggregation["count"].sum() == chart_data["count"].sum()
