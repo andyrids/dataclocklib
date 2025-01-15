@@ -1,6 +1,6 @@
 # Data Clock Visualisation Library
 
-![PyPI - Version](https://img.shields.io/pypi/v/dataclocklib?style=plastic) ![PyPI - Downloads](https://img.shields.io/pypi/dm/dataclocklib?style=plastic) ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fandyrids%2Fdataclocklib%2Fmain%2Fpyproject.toml&style=plastic) ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/andyrids/dataclocklib/ci.yml?branch=main&style=plastic&logo=pytest&logoColor=%230A9EDC&label=pytest) 
+![PyPI - Version](https://img.shields.io/pypi/v/dataclocklib?style=plastic) ![PyPI - Downloads](https://img.shields.io/pypi/dm/dataclocklib?style=plastic) ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fandyrids%2Fdataclocklib%2Fmain%2Fpyproject.toml&style=plastic) ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/andyrids/dataclocklib/ci.yml?branch=main&style=plastic&logo=pytest&logoColor=%230A9EDC&label=pytest)
 ![GitHub deployments](https://img.shields.io/github/deployments/andyrids/dataclocklib/github-pages?style=plastic&&logo=sphinx&label=sphinx)
 
 ## Introduction
@@ -36,15 +36,17 @@ data = pd.read_parquet(
 )
 
 graph_data, fig, ax = dataclock(
-    data=data.query("Date_Time.dt.year.ge(2015)"),
+    data=data.query("Date_Time.dt.year.eq(2015)"),
     date_column="Date_Time",
     agg_column="Number_of_Casualties",
     agg="sum",
     mode="DOW_HOUR",
     cmap_name="CMRmap_r",
-    chart_title="UK Car Accident Casualties 2015",
+    chart_title="UK Traffic Accident Casualties",
     chart_subtitle=None,
-    chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data"
+    chart_period="Period: 2015",
+    chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data",
+    default_text=True,
 )
 ```
 
@@ -65,9 +67,11 @@ graph_data, fig, ax = dataclock(
     agg="count",
     mode="DOW_HOUR",
     cmap_name="RdYlGn_r",
-    chart_title="UK Car Accidents 2010",
+    chart_title="UK Traffic Accidents",
     chart_subtitle=None,
-    chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data"
+    chart_period="Period: 2010",
+    chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data",
+    default_text=True,
 )
 ```
 
