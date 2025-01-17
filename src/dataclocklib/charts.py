@@ -30,7 +30,8 @@ Types:
 from __future__ import annotations
 
 import calendar
-from collections import defaultdict
+import json
+import pathlib
 from typing import Literal, Optional, Tuple, TypeAlias, get_args
 
 import matplotlib.pyplot as plt
@@ -38,12 +39,15 @@ import numpy as np
 from matplotlib import colormaps
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
-from matplotlib.colors import LinearSegmentedColormap, Normalize
+from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
 from pandas import DataFrame, MultiIndex, NamedAgg
+from pandas.api.types import is_numeric_dtype
 
-from dataclocklib.exceptions import AggregationError, ModeError
-from dataclocklib.utility import add_text
+from dataclocklib.exceptions import (
+    AggregationColumnError, AggregationFunctionError, ModeError
+)
+from dataclocklib.utility import add_text, assign_ring_wedge_columns
 
 ColourMap: TypeAlias = Literal[
     "RdYlGn_r", "CMRmap_r", "inferno_r", "YlGnBu_r", "viridis"
@@ -59,6 +63,8 @@ Aggregation: TypeAlias = Literal[
     "count", "max", "mean", "median", "min", "sum"
 ]
 VALID_AGGREGATIONS: Tuple[Aggregation, ...] = get_args(Aggregation)
+
+config_file = pathlib.Path(__file__).parent / "config" / "annotations.json"
 
 
 def dataclock(
@@ -103,7 +109,8 @@ def dataclock(
             chart_subtitle ('[agg] by [period] (rings) & [period] (wedges)').
 
     Raises:
-        AggregationError: Incompatible agg_column dtype & agg combination.
+        AggregationColumnError: Expected aggregation column value.
+        AggregationFunctionError: Unexpected aggregation function value.
         ModeError: Unexpected mode value is passed.
         ValueError: Incompatible date_column dtype or empty DataFrame.
 
@@ -111,45 +118,9 @@ def dataclock(
         A tuple containing a DataFrame with the aggregate values used to
         create the chart, the matplotlib chart Figure and Axes objects.
     """
-    if data.empty:
-        raise ValueError(f"DataFrame is empty.")
-    if data[date_column].dtype.name != "datetime64[ns]":
-        raise ValueError(f"date_column dtype is not datetime64[ns].")
-    if mode not in VALID_MODES:
-        raise ModeError(mode, mode_map.keys())
-    if agg not in VALID_AGGREGATIONS:
-        raise AggregationError(agg, agg_column)
-    if agg_column is None and agg != "count":
-        raise AggregationError(agg, agg_column)
-
-    # dict map for ring & wedge features based on mode
-    mode_map = defaultdict(dict)
-    # year | January - December
-    if mode == "YEAR_MONTH":
-        mode_map[mode]["ring"] = data[date_column].dt.year
-        mode_map[mode]["wedge"] = data[date_column].dt.month_name()
-    # year | weeks 1 - 52
-    if mode == "YEAR_WEEK":
-        mode_map[mode]["ring"] = data[date_column].dt.year
-        week = data[date_column].dt.isocalendar().week
-        week[week == 53] = 52
-        mode_map[mode]["wedge"] = week
-    # weeks 1 - 52 | Monday - Sunday
-    if mode == "WEEK_DAY":
-        week = data[date_column].dt.isocalendar().week
-        year = data[date_column].dt.year
-        mode_map[mode]["ring"] = week + year * 100
-        mode_map[mode]["wedge"] = data[date_column].dt.day_name()
-    # days 1 - 7 (Monday - Sunday) | 00:00 - 23:00
-    if mode == "DOW_HOUR":
-        mode_map[mode]["ring"] = data[date_column].dt.day_of_week
-        mode_map[mode]["wedge"] = data[date_column].dt.hour
-    # days 1 - 365 | 00:00 - 23:00
-    if mode == "DAY_HOUR":
-        mode_map[mode]["ring"] = data[date_column].dt.strftime("%Y%j")
-        mode_map[mode]["wedge"] = data[date_column].dt.hour
-
-    data = data.assign(**mode_map[mode]).astype({"ring": "int64"})
+    _validate_chart_parameters(data, date_column, agg_column, agg, mode)
+ 
+    data = assign_ring_wedge_columns(data, date_column, mode)    
 
     # dict map for wedge min & max range based on mode
     wedge_range_map = {
@@ -318,53 +289,295 @@ def dataclock(
     if chart_subtitle is None:
         chart_subtitle = f"{agg.title()} by {chart_subtitle_map[mode]}"
 
+    annotations = json.loads(config_file.read_bytes()).get("dataclock", {})
+
     # chart title text
     add_text(
         ax=ax,
-        x=0.12,
-        y=0.93,
         text=chart_title,
-        fontsize=14,
-        weight="bold",
-        alpha=0.8,
-        ha="left",
         transform=fig.transFigure,
+        **annotations["chart_title"]
     )
-
+        
     # chart subtitle text
     add_text(
         ax=ax,
-        x=0.12,
-        y=0.90,
-        text=chart_subtitle,
-        fontsize=12,
-        alpha=0.8,
-        ha="left",
+        text=chart_title,
         transform=fig.transFigure,
+        **annotations["chart_subtitle"]
     )
 
     # chart reporting period text
     add_text(
         ax=ax,
-        x=0.12,
-        y=0.87,
         text=chart_period,
-        fontsize=10,
-        alpha=0.7,
-        ha="left",
         transform=fig.transFigure,
+        **annotations["chart_period"]
     )
 
     # chart source text
     add_text(
         ax=ax,
-        x=0.1,
-        y=0.15,
         text=chart_source,
-        fontsize=10,
-        alpha=0.7,
-        ha="left",
         transform=fig.transFigure,
+        **annotations["chart_source"]
     )
 
     return data_graph, fig, ax
+
+
+def line_chart(
+        data: DataFrame,
+        date_column: str,
+        agg_column: Optional[str] = None,
+        agg: Aggregation = "count",
+        mode: Mode = "DOW_HOUR",
+        chart_title: Optional[str] = None,
+        chart_subtitle: Optional[str] = None,
+        chart_period: Optional[str] = None,
+        chart_source: Optional[str] = None,
+        default_text: bool = True,
+    ) -> tuple[DataFrame, Figure, Axes]:
+    """Create a temporal line chart from a pandas DataFrame.
+
+    This function will divide a larger unit of time into rings and subdivide
+    them by a smaller unit of time into wedges, creating temporal bins. The
+    ring values will be represented as individual lines, with the aggregation
+    values on the y-axis and wedges as the x-axis.
+
+    Args:
+        data (DataFrame): DataFrame containing data to visualise.
+        date_column (str): Name of DataFrame datetime64 column.
+        agg (str): Aggregation function; 'count', 'mean', 'median',
+            'mode' & 'sum'.
+        agg_column (str, optional): DataFrame Column to aggregate.
+        mode (Mode, optional): A mode key representing the
+            temporal bins used in the chart; 'YEAR_MONTH',
+            'YEAR_WEEK', 'WEEK_DAY', 'DOW_HOUR' & 'DAY_HOUR'.
+        chart_title (str, optional): Chart title.
+        chart_subtitle (str, optional): Chart subtitle.
+        chart_period (str, optional): Chart reporting period.
+        chart_source (str, optional): Chart data source.
+        default_text (bool, optional): Flag to generating default chart
+            annotations for the chart_title ('Data Clock Chart') and
+            chart_subtitle ('[agg] by [period] (rings) & [period] (wedges)').
+
+    Raises:
+        AggregationColumnError: Expected aggregation column value.
+        AggregationFunctionError: Unexpected aggregation function value.
+        ModeError: Unexpected mode value is passed.
+        ValueError: Incompatible date_column dtype or empty DataFrame.
+
+    Returns:
+        A tuple containing a DataFrame with the aggregate values used to
+        create the chart, the matplotlib and Axes objects.
+    """
+    _validate_chart_parameters(data, date_column, agg_column, agg, mode)
+
+    data = assign_ring_wedge_columns(data, date_column, mode)    
+
+    # dict map for wedge min & max range based on mode
+    wedge_range_map = {
+        "YEAR_MONTH": tuple(calendar.month_name[1:]),
+        "YEAR_WEEK": range(1, 53),
+        "WEEK_DAY": tuple(calendar.day_name),
+        "DOW_HOUR": range(0, 24),
+        "DAY_HOUR": range(0, 24),
+    }
+
+    index_names = ["ring", "wedge"]
+    agg_column = agg_column or date_column
+
+    data_grouped = data.groupby(index_names, as_index=False)
+    data_agg = data_grouped.agg(**{agg: NamedAgg(agg_column, agg)})
+
+    # index with all possible combinations of ring & wedge values
+    product_index = MultiIndex.from_product(
+        [data_agg["ring"].unique(), wedge_range_map[mode]], names=index_names
+    )
+
+    # populate any rows for missing ring/wedge combinations
+    data_agg = (
+        data_agg
+        .set_index(index_names)
+        .reindex(product_index)
+        .reset_index(level="wedge")
+    )
+
+    # replace NaN values created for missing missing ring/wedge combinations
+    data_graph = data_agg.fillna(0)
+
+    # convert aggregate function results to int64, if possible
+    if (data_graph[agg] % 1 == 0).all():
+        data_graph[agg] = data_graph[agg].astype("int64")
+    
+    fig, ax = plt.subplots(figsize=(13.33, 7.5), dpi=96)
+
+    # adjust subplots for custom title, subtitle and source text
+    plt.subplots_adjust(
+        left=None, bottom=0.2, right=None, top=0.85, wspace=None, hspace=None
+    )
+
+    # set white figure background
+    fig.patch.set_facecolor("w")
+
+    # create chart grid
+    ax.grid(which="major", axis="x", color="#DAD8D7", alpha=0.5, zorder=1)
+    ax.grid(which="major", axis="y", color="#DAD8D7", alpha=0.5, zorder=1)
+
+    ax.spines[["top", "right", "bottom"]].set_visible(False)
+    ax.spines["left"].set_linewidth(1.1)
+
+    ax.xaxis.set_tick_params(
+        which="both", pad=2, labelbottom=True, bottom=True, labelsize=12
+    )
+
+    n_wedges = data_graph["wedge"].nunique()
+    unique_wedges = data_graph["wedge"].unique()
+    if mode in ("DOW_HOUR", "DAY_HOUR"):
+        xaxis_labels = map(lambda x: f"{x:02d}:00", unique_wedges)
+        ax.set_xticks(range(n_wedges), xaxis_labels, rotation=45, ha="right")
+    else:
+        ax.set_xticks(range(n_wedges), unique_wedges, rotation=45, ha="right")
+    ax.set_xlabel("", fontsize=12, labelpad=10)
+
+    ax.set_ylabel(agg.title(), fontsize=12, labelpad=10)
+    ax.yaxis.set_label_position("left")
+    ax.yaxis.set_major_formatter(lambda s, i: f"{s:,.0f}")
+    ax.yaxis.set_tick_params(
+        pad=2, labeltop=False, labelbottom=True, bottom=False, labelsize=12
+    )
+
+    unique_indices = data_graph.index.unique()
+    if mode == "DOW_HOUR":
+        line_labels = dict(enumerate(calendar.day_name))
+    else:
+        line_labels = dict(zip(unique_indices, unique_indices))
+
+    cmap = plt.get_cmap("tab10")
+
+    for idx, i in enumerate(unique_indices):
+        line_data = data_graph.loc[i]
+        # ensure x is always numeric
+        x = list(range(line_data["wedge"].size))
+
+        ax.plot(
+            x,
+            line_data[agg],
+            color=cmap(idx),
+            label=line_labels[i],
+            zorder=2
+        )
+
+        # custom style for final point
+        ax.plot(
+            x[-1],
+            line_data[agg].iloc[-1],
+            "o",
+            color=cmap(idx),
+            markersize=10,
+            alpha=0.3
+        )
+
+        # custom style for final point
+        ax.plot(
+            x[-1],
+            line_data[agg].iloc[-1],
+            "o",
+            color=cmap(idx),
+            markersize=5,
+        )
+
+    # add legend
+    ax.legend(loc="best", fontsize=12)
+
+    # generate default text for missing chart_title & chart_subtitle values
+    if default_text:
+        if chart_title is None:
+            chart_title = "Line Chart"
+
+    chart_subtitle_map = {
+        "YEAR_MONTH": "year & month",
+        "YEAR_WEEK": "year & week of year",
+        "WEEK_DAY": "week of year & day of week",
+        "DOW_HOUR": "day of week & hour of day",
+        "DAY_HOUR": "day of year & hour of day",
+    }
+    if chart_subtitle is None:
+        chart_subtitle = f"{agg.title()} by {chart_subtitle_map[mode]}"
+
+    annotations = json.loads(config_file.read_bytes()).get("line_chart", {})
+
+    # chart title text
+    add_text(
+        ax=ax,
+        text=chart_title,
+        transform=fig.transFigure,
+        **annotations["chart_title"]
+    )
+        
+    # chart subtitle text
+    add_text(
+        ax=ax,
+        text=chart_subtitle,
+        transform=fig.transFigure,
+        **annotations["chart_subtitle"]
+    )
+
+    # chart reporting period text
+    add_text(
+        ax=ax,
+        text=chart_period,
+        transform=fig.transFigure,
+        **annotations["chart_period"]
+    )
+
+    # chart source text
+    add_text(
+        ax=ax,
+        text=chart_source,
+        transform=fig.transFigure,
+        **annotations["chart_source"]
+    )
+
+    return data_graph, fig, ax
+
+
+def _validate_chart_parameters(
+    data: DataFrame,
+    date_column: str,
+    agg_column: Optional[str] = None,
+    agg: Aggregation = "count",
+    mode: str = "DAY_HOUR",
+    )  -> None:
+    """Validate chart parameters.
+
+    Args:
+        data (DataFrame): DataFrame containing data to visualise.
+        date_column (str): Name of DataFrame datetime64 column.
+        agg (str): Aggregation function; 'count', 'mean', 'median',
+            'mode' & 'sum'.
+        agg_column (str, optional): DataFrame Column to aggregate.
+        mode (Mode, optional): A mode key representing the
+            temporal bins used in the chart; 'YEAR_MONTH',
+            'YEAR_WEEK', 'WEEK_DAY', 'DOW_HOUR' & 'DAY_HOUR'.
+
+    Raises:
+        AggregationColumnError: Expected aggregation column value.
+        AggregationFunctionError: Unexpected aggregation function value.
+        ModeError: Unexpected mode value is passed.
+        ValueError: Incompatible date_column dtype or empty DataFrame.
+
+    Returns:
+        None
+    """
+    if data.empty:
+        raise ValueError(f"DataFrame is empty.")
+    if data[date_column].dtype.name != "datetime64[ns]":
+        raise ValueError(f"date_column dtype is not datetime64[ns].")
+    if mode not in VALID_MODES:
+        raise ModeError(mode, VALID_MODES)
+    if agg not in VALID_AGGREGATIONS:
+        raise AggregationFunctionError(agg, VALID_AGGREGATIONS)
+    if agg_column is None and agg != "count":
+        raise AggregationColumnError(agg)

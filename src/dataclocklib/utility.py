@@ -27,10 +27,12 @@ Types:
     Mode: Keys representing temporal bins used in each chart.
 """
 
+from collections import defaultdict
 from typing import Literal, Optional, Tuple, get_args
 
 from matplotlib.axes import Axes
 from matplotlib.text import Text
+from pandas import DataFrame
 
 FontStyle = Literal["normal", "italic", "oblique"]
 VALID_STYLES: Tuple[FontStyle, ...] = get_args(FontStyle)
@@ -52,3 +54,55 @@ def add_text(
     """
     s = "" if text is None else text
     return ax.text(x, y, s, **kwargs)
+
+
+def assign_ring_wedge_columns(
+        data: DataFrame,
+        date_column: str,
+        mode: str
+    ) -> DataFrame:
+    """Assign ring & wedge columns to a DataFrame based on mode.
+
+    The mode value is mapped to a predetermined division of a larger unit of
+    time into rings, which are then subdivided by a smaller unit of time into
+    wedges, creating a set of temporal bins. These bins are assigned as 'ring'
+    and 'wedge' columns.
+
+    Args:
+        data (DataFrame): DataFrame containing data to visualise.
+        date_column (str): Name of DataFrame datetime64 column.
+        mode (Mode, optional): A mode key representing the
+            temporal bins used in the chart; 'YEAR_MONTH',
+            'YEAR_WEEK', 'WEEK_DAY', 'DOW_HOUR' & 'DAY_HOUR'.
+
+    Returns:
+        A DataFrame with 'ring' & 'wedge' columns assigned.
+    """
+    # dict map for ring & wedge features based on mode
+    mode_map = defaultdict(dict)
+    # year | January - December
+    if mode == "YEAR_MONTH":
+        mode_map[mode]["ring"] = data[date_column].dt.year
+        mode_map[mode]["wedge"] = data[date_column].dt.month_name()
+    # year | weeks 1 - 52
+    if mode == "YEAR_WEEK":
+        mode_map[mode]["ring"] = data[date_column].dt.year
+        week = data[date_column].dt.isocalendar().week
+        week[week == 53] = 52
+        mode_map[mode]["wedge"] = week
+    # weeks 1 - 52 | Monday - Sunday
+    if mode == "WEEK_DAY":
+        week = data[date_column].dt.isocalendar().week
+        year = data[date_column].dt.year
+        mode_map[mode]["ring"] = week + year * 100
+        mode_map[mode]["wedge"] = data[date_column].dt.day_name()
+    # days 1 - 7 (Monday - Sunday) | 00:00 - 23:00
+    if mode == "DOW_HOUR":
+        mode_map[mode]["ring"] = data[date_column].dt.day_of_week
+        mode_map[mode]["wedge"] = data[date_column].dt.hour
+    # days 1 - 365 | 00:00 - 23:00
+    if mode == "DAY_HOUR":
+        mode_map[mode]["ring"] = data[date_column].dt.strftime("%Y%j")
+        mode_map[mode]["wedge"] = data[date_column].dt.hour
+
+    return data.assign(**mode_map[mode]).astype({"ring": "int64"})

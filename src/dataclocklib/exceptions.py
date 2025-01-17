@@ -31,6 +31,33 @@ Types:
 from typing import Iterable
 
 
+class AggregationColumnError(ValueError):
+    """Raised on missing aggregation column."""
+
+    def __init__(self, agg: str):
+        """Initialise AggregationColumnError exception.
+
+        Args:
+            agg (str): Aggregation function.
+        """
+        msg = f"Expected agg_column for aggregation function {agg}."
+        super().__init__(msg)
+
+
+class AggregationFunctionError(ValueError):
+    """Raised on unexpected aggregation function."""
+
+    def __init__(self, agg: str, valid_functions: Iterable):
+        """Initialise AggregationFunctionError exception.
+
+        Args:
+            agg (str): Aggregation function.
+            valid_functions (Iterable): Valid aggregation functions.
+        """
+        msg = f"Unexpected aggregation function ({agg}): {valid_functions}."
+        super().__init__(msg)
+
+
 class ModeError(ValueError):
     """Raised on incorrect chart mode value."""
 
@@ -40,19 +67,5 @@ class ModeError(ValueError):
         Args:
             mode (str): Incorrect mode value.
         """
-        msg = f"Unexpected mode value ({mode}): {valid_modes}"
-        super().__init__(msg)
-
-
-class AggregationError(ValueError):
-    """Raised on incompatible aggregation value & function combination."""
-
-    def __init__(self, agg: str, agg_column: str):
-        """Initialise AggregationError exception.
-
-        Args:
-            agg (str): Aggregation function.
-            agg_column (str): Aggregation column.
-        """
-        msg = f"Expected numeric dtype for agg_column & agg function {agg}."
+        msg = f"Unexpected mode value ({mode}): {valid_modes}."
         super().__init__(msg)
