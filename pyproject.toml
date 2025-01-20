@@ -74,6 +74,9 @@ select = [
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.pyright]
+reportGeneralTypeIssues = false
+
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
 tmp_path_retention_count = 1
