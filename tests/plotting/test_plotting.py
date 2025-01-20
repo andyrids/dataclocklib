@@ -56,6 +56,8 @@ def test_baseline_year_month_chart():
         agg="count",
         agg_column=None,
         mode="YEAR_MONTH",
+        cmap_name="RdYlGn_r",
+        default_text=True,
         chart_title=None,
         chart_subtitle=None,
         chart_period=None,
@@ -87,6 +89,8 @@ def test_baseline_week_day_chart():
         agg="count",
         agg_column=None,
         mode="WEEK_DAY",
+        cmap_name="RdYlGn_r",
+        default_text=True,
         chart_title=None,
         chart_subtitle=None,
         chart_period=None,
@@ -116,11 +120,12 @@ def test_baseline_dow_hour_chart():
         agg="count",
         agg_column=None,
         mode="DOW_HOUR",
+        cmap_name="RdYlGn_r",
+        default_text=True,
         chart_title=None,
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True,
     )
     return fig
 
@@ -149,10 +154,11 @@ def test_baseline_day_hour_chart():
         agg="count",
         agg_column=None,
         mode="DAY_HOUR",
+        cmap_name="RdYlGn_r",
+        default_text=True,
         chart_title=None,
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True,
     )
     return fig

@@ -63,11 +63,11 @@ def test_year_month_default() -> Figure:
         agg="count",
         agg_column=None,
         mode="YEAR_MONTH",
+        default_text=True,
         chart_title=None,
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True,
     )
     return fig
 
@@ -84,8 +84,8 @@ def test_week_day_default() -> Figure:
         Figure object for comparison with reference figure in
         tests/plotting/baseline directory.
     """
-    datetime_start = "Date_Time.ge('2013-12-1 00:00:00')"
-    datetime_stop = "Date_Time.le('2013-12-31 23:59:59')"
+    datetime_start = "Date_Time.ge('2011-12-1 00:00:00')"
+    datetime_stop = "Date_Time.le('2011-12-31 23:59:59')"
 
     chart_data, fig, ax = dataclock(
         data=traffic_data.query(f"{datetime_start} & {datetime_stop}"),
@@ -93,11 +93,11 @@ def test_week_day_default() -> Figure:
         agg="count",
         agg_column=None,
         mode="WEEK_DAY",
+        default_text=True,
         chart_title=None,
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True,
     )
     return fig
 
@@ -120,11 +120,11 @@ def test_dow_hour_default() -> Figure:
         agg="count",
         agg_column=None,
         mode="DOW_HOUR",
+        default_text=True,
         chart_title=None,
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True,
     )
     return fig
 
@@ -150,11 +150,11 @@ def test_day_hour_default() -> Figure:
         agg="count",
         agg_column=None,
         mode="DAY_HOUR",
+        default_text=True,
         chart_title=None,
         chart_subtitle=None,
         chart_period=None,
         chart_source=None,
-        default_text=True,
     )
     return fig
 
@@ -230,11 +230,11 @@ def test_chart_aggregation():
             agg="count",
             agg_column=None,
             mode=mode,
+            default_text=False,
             chart_title=None,
             chart_subtitle=None,
             chart_period=None,
             chart_source=None,
-            default_text=False,
         )
 
         manual_aggregation = manual_data.groupby(columns, as_index=False).agg(
