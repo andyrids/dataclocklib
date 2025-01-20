@@ -7,11 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Added | Changed | Deprecated | Removed | Fixed -->
 
-## [0.1.8] - 2025-01-15
+## [0.1.8] - 2025-01-20
 
 ### Added
 
+- Basic overview guide on documentation site
+- Dynamic 'optimal' figure size calculation based on total wedge count.
+- Dynamic chart annotation font scaling & spacing adjustment.
+- Dynamic polar axis label font scaling based on number of rings.
+- Configuration files (`dataclocklib/config/`) for default chart title & subtitle creation.
+- Dataclock *kwargs* `**fg_kw` added, which aligns with `pyplot.subplots`.
+  - Figure size (figsize) parameter will be overwritten and must be modified with the returned Figure object.
+
 ### Changed
+
+- Moved custom types to `dataclocklib.typing`.
+  - `ColorMap` type changed to `CmapNames`.
+- Moved colorbar logic to `dataclocklib.utility.add_colorbar`.
+- Dataclock arguments; `chart_title`, `chart_subtitle`, `chart_period`, `chart_source` are keyword only.
+
 
 ## [0.1.7] - 2025-01-15
 
@@ -21,13 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Test aggregation values for different chart modes.
   - Test figure generation for different chart modes.
   - Test custom chart annotation text values.
-- Error handling for empty DataFrame & wrong dtype.
+- Error handling for empty DataFrame & wrong data type.
 
 ### Changed
 
 - Parameter 'default_text' triggers default chart title and subtitle annotations if chart_title & chart_subtitle are None.
 - Parameter 'chart_period' for optional annotation below subtitle for dataset reporting period.
-- Raises ValueError if data[date_column] Series does not have not a 'datetime64[ns]' dtype.
+- Raises ValueError if data[date_column] Series does not have not a 'datetime64[ns]' data type.
 - Raises ValueError if data is an empty DataFrame.
 
 ### Fixed
