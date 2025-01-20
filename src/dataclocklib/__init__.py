@@ -25,7 +25,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from importlib.metadata import PackageNotFoundError, version
 
+from dataclocklib.charts import dataclock, line_chart
+
 try:
     __version__ = version("dataclocklib")
 except PackageNotFoundError:
     pass
+
+__all__ = ("dataclock", "line_chart")
