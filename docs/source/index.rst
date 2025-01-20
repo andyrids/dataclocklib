@@ -11,6 +11,7 @@ Data Clock Visualisation Library
    :hidden:
    :caption: User Guide
 
+   guide
    tutorial
 
 .. toctree::
@@ -111,6 +112,7 @@ The table below details the currently supported chart modes and the correspondin
          agg="count",
          mode="DOW_HOUR",
          cmap_name="RdYlGn_r",
+         default_text=True,
          chart_title="UK Car Accidents 2010",
          chart_subtitle=None,
          chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data"
@@ -136,6 +138,7 @@ The table below details the currently supported chart modes and the correspondin
          agg="sum",
          mode="YEAR_MONTH",
          cmap_name="YlGnBu_r",
+         default_text=True,
          chart_title="UK Fatal Car Accident Casualties 2010 - 2015",
          chart_subtitle=None,
          chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data"
@@ -148,8 +151,11 @@ The table below details the currently supported chart modes and the correspondin
 Tutorial
 --------
 
+:doc:`guide`
+   A basic overview of dataclocklib chart creation.
+
 :doc:`tutorial`
-   Follow the dataclock chart tutorial.
+   A look at incorporating dataclocklib in your Exploratory Data Analysis (EDA).
 
 Reference
 ---------
