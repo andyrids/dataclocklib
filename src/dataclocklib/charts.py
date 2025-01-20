@@ -21,50 +21,51 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Functions:
     dataclock: Create a data clock chart from a pandas DataFrame.
+    line_chart: Create a line chart from a pandas DataFrame.
 
-Types:
-    Aggregation: Keys representing aggregation functions.
-    Mode: Keys representing temporal bins used in each chart.
+Constants:
+    VALID_AGGREGATIONS: Tuple of valid aggregation function names.
+    VALID_CMAPS: Tuple of valid colour map names.
+    VALID_MODES: Tuple of valid chart modes.
 """
 
 from __future__ import annotations
 
 import calendar
-import json
+import configparser
 import pathlib
-from typing import Literal, Optional, Tuple, TypeAlias, get_args
+from typing import Optional, Tuple, get_args
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import colormaps
 from matplotlib.axes import Axes
-from matplotlib.cm import ScalarMappable
-from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
-from pandas import DataFrame, MultiIndex, NamedAgg
-from pandas.api.types import is_numeric_dtype
+from pandas import DataFrame, MultiIndex
 
 from dataclocklib.exceptions import (
-    AggregationColumnError, AggregationFunctionError, ModeError
+    AggregationColumnError,
+    AggregationFunctionError,
+    EmptyDataFrameError,
+    MissingDatetimeError,
+    ModeError,
 )
-from dataclocklib.utility import add_text, assign_ring_wedge_columns
+from dataclocklib.typing import Aggregation, CmapNames, Mode
+from dataclocklib.utility import (
+    add_colorbar,
+    add_text,
+    assign_ring_wedge_columns,
+    calculate_figure_dimensions,
+)
 
-ColourMap: TypeAlias = Literal[
-    "RdYlGn_r", "CMRmap_r", "inferno_r", "YlGnBu_r", "viridis"
-]
-VALID_CMAPS: Tuple[ColourMap, ...] = get_args(ColourMap)
-
-Mode: TypeAlias = Literal[
-    "YEAR_MONTH", "YEAR_WEEK", "WEEK_DAY", "DOW_HOUR", "DAY_HOUR"
-]
+VALID_AGGREGATIONS: Tuple[Aggregation, ...] = get_args(Aggregation)
+VALID_CMAPS: Tuple[CmapNames, ...] = get_args(CmapNames)
 VALID_MODES: Tuple[Mode, ...] = get_args(Mode)
 
-Aggregation: TypeAlias = Literal[
-    "count", "max", "mean", "median", "min", "sum"
-]
-VALID_AGGREGATIONS: Tuple[Aggregation, ...] = get_args(Aggregation)
+# config files for default title and subtitle text
+dataclock_ini = pathlib.Path(__file__).parent / "config" / "dataclock.ini"
+linechart_ini = pathlib.Path(__file__).parent / "config" / "linechart.ini"
 
-config_file = pathlib.Path(__file__).parent / "config" / "annotations.json"
+config = configparser.ConfigParser()
 
 
 def dataclock(
@@ -73,12 +74,14 @@ def dataclock(
     agg_column: Optional[str] = None,
     agg: Aggregation = "count",
     mode: Mode = "DAY_HOUR",
-    cmap_name: ColourMap = "RdYlGn_r",
+    cmap_name: CmapNames = "RdYlGn_r",
+    default_text: bool = True,
+    *,  # keyword only arguments
     chart_title: Optional[str] = None,
     chart_subtitle: Optional[str] = None,
     chart_period: Optional[str] = None,
     chart_source: Optional[str] = None,
-    default_text: bool = True,
+    **fig_kw,
 ) -> tuple[DataFrame, Figure, Axes]:
     """Create a data clock chart from a pandas DataFrame.
 
@@ -100,27 +103,29 @@ def dataclock(
         cmap_name: (ColourMap, optional): Matplotlib colormap name used
             to symbolise the temporal bins; 'RdYlGn_r', 'CMRmap_r',
             'inferno_r', 'YlGnBu_r' & 'viridis'.
+        default_text (bool, optional): Flag to generating default chart
+            annotations for the chart_title ('Data Clock Chart') and
+            chart_subtitle ('[agg] by [period] (rings) & [period] (wedges)').
         chart_title (str, optional): Chart title.
         chart_subtitle (str, optional): Chart subtitle.
         chart_period (str, optional): Chart reporting period.
         chart_source (str, optional): Chart data source.
-        default_text (bool, optional): Flag to generating default chart
-            annotations for the chart_title ('Data Clock Chart') and
-            chart_subtitle ('[agg] by [period] (rings) & [period] (wedges)').
+        fig_kw (dict): Chart figure kwargs passed to pyplot.subplots.
 
     Raises:
         AggregationColumnError: Expected aggregation column value.
         AggregationFunctionError: Unexpected aggregation function value.
+        EmptyDataFrameError: Unexpected empty DataFrame.
+        MissingDatetimeError: Unexpected data[date_column] dtype.
         ModeError: Unexpected mode value is passed.
-        ValueError: Incompatible date_column dtype or empty DataFrame.
 
     Returns:
         A tuple containing a DataFrame with the aggregate values used to
         create the chart, the matplotlib chart Figure and Axes objects.
     """
     _validate_chart_parameters(data, date_column, agg_column, agg, mode)
- 
-    data = assign_ring_wedge_columns(data, date_column, mode)    
+
+    data = assign_ring_wedge_columns(data, date_column, mode)
 
     # dict map for wedge min & max range based on mode
     wedge_range_map = {
@@ -134,8 +139,9 @@ def dataclock(
     index_names = ["ring", "wedge"]
     agg_column = agg_column or date_column
 
-    data_grouped = data.groupby(index_names, as_index=False)
-    data_agg = data_grouped.agg(**{agg: NamedAgg(agg_column, agg)})
+    # groupby 'ring' & 'wedge' values and apply aggregate function agg
+    data_agg = data.groupby(index_names, as_index=False)[agg_column].agg(agg)
+    data_agg = data_agg.set_axis([*index_names, agg], axis="columns")
 
     # index with all possible combinations of ring & wedge values
     product_index = MultiIndex.from_product(
@@ -154,15 +160,28 @@ def dataclock(
     if (data_graph[agg] % 1 == 0).all():
         data_graph[agg] = data_graph[agg].astype("int64")
 
-    # create figure with polar projection
-    fig, ax = plt.subplots(
-        subplot_kw={"projection": "polar"}, figsize=(11, 10), dpi=96
+    # calculate optimal figure dimensions (0.85 per wedge)
+    fig_size = calculate_figure_dimensions(data_graph["wedge"].size)
+
+    # base figure spacing (10%) made available for Text, Subtitle & Period
+    base_spacing = 0.10
+    # scale spacing relative to figure minimum width/height (10,10)
+    spacing_scale = fig_size[0] / 10
+    # create a top margin for text elements, capped at 20%
+    top_margin = min(base_spacing * (spacing_scale**0.5), 0.20)
+
+    fig_kw.update(
+        {"figsize": fig_size, "dpi": 100, "constrained_layout": False}
     )
 
-    # adjust subplots for custom title, subtitle and source text
-    plt.subplots_adjust(
-        left=None, bottom=0.2, right=None, top=0.9, wspace=None, hspace=None
-    )
+    # create figure with polar projection
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, **fig_kw)
+
+    # plot rect parameters; left, bottom, width & height
+    rect = [0.1, 0.12, 0.8, 0.88 - top_margin]
+
+    # apply the positioning
+    ax.set_position(rect)
 
     # set white figure background
     fig.patch.set_facecolor("w")
@@ -180,17 +199,11 @@ def dataclock(
     width = 2 * np.pi / n_wedges
 
     unique_rings = data_graph["ring"].unique()
-
     max_radius = unique_rings.size + 1
+
     ax.set_rorigin(-1)
     ax.set_rlim(1, max_radius)
 
-    # create x-axis labels
-    if mode not in ("DOW_HOUR", "DAY_HOUR"):
-        xaxis_labels = wedge_range_map[mode]
-    # custom x-axis labels for hour of day (00:00 - 23:00)
-    else:
-        xaxis_labels = [f"{x:02d}:00" for x in range(24)]
     # set x-axis ticks
     ax.xaxis.set_ticks(theta)
     ax.xaxis.set_ticklabels([])
@@ -204,48 +217,48 @@ def dataclock(
 
     ax.spines["polar"].set_visible(True)
 
-    agg_max = data_graph[agg].max()
-
-    # minimum, 25%, 50%, 75%, maximum
-    colorbar_dtype = (np.float64, np.int64)[agg in ("count", "sum")]
-    colourbar_ticks = np.linspace(1, agg_max, 5, dtype=colorbar_dtype)
-
-    cmap = colormaps[cmap_name]
-    cmap.set_under("w")
-    cmap_norm = Normalize(1, agg_max)
-
-    colorbar = fig.colorbar(
-        ScalarMappable(norm=cmap_norm, cmap=cmap),
-        ax=ax,
-        orientation="vertical",
-        ticks=colourbar_ticks,
-        shrink=0.6,
-        pad=0.2,
-        extend="min",
+    values_dtype = (np.float64, np.int64)[agg in ("count", "sum")]
+    # we can use colorbar.cmap(colorbar.norm(<aggregation value>)),
+    # to return the RGB values to represent each aggregation result
+    colorbar = add_colorbar(
+        ax, fig, cmap_name, data_graph[agg].max(), dtype=values_dtype
     )
 
-    colorbar.ax.tick_params(direction="out")
+    # create x-axis labels
+    if mode not in ("DOW_HOUR", "DAY_HOUR"):
+        polar_labels = wedge_range_map[mode]
+    # custom x-axis labels for hour of day (00:00 - 23:00)
+    else:
+        polar_labels = [f"{x:02d}:00" for x in range(24)]
 
-    # set text label y position based on number of rings + 1 (max_radius)
-    text_y = max_radius + 0.7 if max_radius > 3 else max_radius + 0.2
+    fig_width, _ = fig_size
+    font_scale_factor = fig_width / 11
+
+    ring_scale_factor = max_radius / 3
+    ring_text_spacing = 0.2
+
+    if ring_scale_factor > 3:
+        ring_text_spacing = ring_text_spacing * (ring_scale_factor**0.61)
+    else:
+        ring_text_spacing = ring_text_spacing * ring_scale_factor
 
     for idx, angle in enumerate(theta):
         # convert to degrees for text rotation
         angle_deg = np.rad2deg(angle)
 
-        if 0 <= angle_deg < 90:
-            rotation = -angle_deg
-        elif 270 <= angle_deg <= 360:
+        if (0 <= angle_deg < 90) or (270 <= angle_deg <= 360):
             rotation = -angle_deg
         else:
             rotation = 180 - angle_deg
 
         ax.text(
             angle,
-            text_y,
-            xaxis_labels[idx],
+            max_radius + ring_text_spacing,
+            polar_labels[idx],
             rotation=rotation,
             rotation_mode="anchor",
+            transform=ax.transData,
+            fontdict={"fontsize": 11 * font_scale_factor},
             ha="center",
             va="center",
         )
@@ -255,7 +268,9 @@ def dataclock(
 
     for ring_position, ring in enumerate(unique_rings):
         view = data_graph.loc[data_graph["ring"] == ring]
-        graduated_colors = tuple(map(lambda x: cmap(cmap_norm(x)), view[agg]))
+        graduated_colors = tuple(
+            colorbar.cmap(colorbar.norm(i)) for i in view[agg]
+        )
 
         ax.bar(
             # wedges/angles
@@ -276,68 +291,75 @@ def dataclock(
 
     # generate default text for missing chart_title & chart_subtitle values
     if default_text:
+        # read config/dataclock.ini file
+        config.read(dataclock_ini)
+
         if chart_title is None:
-            chart_title = "Data Clock Chart"
+            chart_title = config.get("DEFAULT", "TITLE")
 
-    chart_subtitle_map = {
-        "YEAR_MONTH": "year (rings) & month (wedges)",
-        "YEAR_WEEK": "year (rings) & week of year (wedges)",
-        "WEEK_DAY": "week of year (rings) & day of week (wedges)",
-        "DOW_HOUR": "day of week (rings) & hour of day (wedges)",
-        "DAY_HOUR": "day of year (rings) & hour of day (wedges)",
-    }
-    if chart_subtitle is None:
-        chart_subtitle = f"{agg.title()} by {chart_subtitle_map[mode]}"
+        if chart_subtitle is None:
+            mode_description = config.get("mode.description", mode)
+            chart_subtitle = f"{agg.title()} by {mode_description}"
 
-    annotations = json.loads(config_file.read_bytes()).get("dataclock", {})
+    text_y = 0.95
+    text_spacing = 0.03
 
-    # chart title text
-    add_text(
-        ax=ax,
-        text=chart_title,
-        transform=fig.transFigure,
-        **annotations["chart_title"]
-    )
-        
-    # chart subtitle text
-    add_text(
-        ax=ax,
-        text=chart_title,
-        transform=fig.transFigure,
-        **annotations["chart_subtitle"]
-    )
+    if font_scale_factor > 1:
+        text_spacing = text_spacing * (font_scale_factor**0.1)
+    else:
+        text_spacing = text_spacing * font_scale_factor
 
-    # chart reporting period text
-    add_text(
-        ax=ax,
-        text=chart_period,
-        transform=fig.transFigure,
-        **annotations["chart_period"]
-    )
+    # add title, subtitle and period text to the figure
+    for i, (text, fontsize, weight) in enumerate(
+        zip(  # text | fontsize | weight,
+            (chart_title, chart_subtitle, chart_period),
+            np.array((14, 12, 10)) * font_scale_factor,
+            ("bold", "normal", "normal"),
+        )
+    ):
+        if text is None:
+            continue
+
+        # chart title text
+        add_text(
+            ax=ax,
+            x=0.1,
+            y=text_y - (i * text_spacing),
+            text=text,
+            fontsize=fontsize * font_scale_factor,
+            weight=weight,
+            alpha=0.8,
+            transform=fig.transFigure,
+        )
 
     # chart source text
     add_text(
         ax=ax,
+        x=0.1,
+        y=0.1,
         text=chart_source,
+        fontsize=10 * font_scale_factor,
+        alpha=0.7,
         transform=fig.transFigure,
-        **annotations["chart_source"]
     )
 
     return data_graph, fig, ax
 
 
 def line_chart(
-        data: DataFrame,
-        date_column: str,
-        agg_column: Optional[str] = None,
-        agg: Aggregation = "count",
-        mode: Mode = "DOW_HOUR",
-        chart_title: Optional[str] = None,
-        chart_subtitle: Optional[str] = None,
-        chart_period: Optional[str] = None,
-        chart_source: Optional[str] = None,
-        default_text: bool = True,
-    ) -> tuple[DataFrame, Figure, Axes]:
+    data: DataFrame,
+    date_column: str,
+    agg_column: Optional[str] = None,
+    agg: Aggregation = "count",
+    mode: Mode = "DAY_HOUR",
+    default_text: bool = True,
+    *,  # keyword only arguments
+    chart_title: Optional[str] = None,
+    chart_subtitle: Optional[str] = None,
+    chart_period: Optional[str] = None,
+    chart_source: Optional[str] = None,
+    **fig_kw,
+) -> tuple[DataFrame, Figure, Axes]:
     """Create a temporal line chart from a pandas DataFrame.
 
     This function will divide a larger unit of time into rings and subdivide
@@ -374,7 +396,7 @@ def line_chart(
     """
     _validate_chart_parameters(data, date_column, agg_column, agg, mode)
 
-    data = assign_ring_wedge_columns(data, date_column, mode)    
+    data = assign_ring_wedge_columns(data, date_column, mode)
 
     # dict map for wedge min & max range based on mode
     wedge_range_map = {
@@ -388,8 +410,8 @@ def line_chart(
     index_names = ["ring", "wedge"]
     agg_column = agg_column or date_column
 
-    data_grouped = data.groupby(index_names, as_index=False)
-    data_agg = data_grouped.agg(**{agg: NamedAgg(agg_column, agg)})
+    data_agg = data.groupby(index_names, as_index=False)[agg_column].agg(agg)
+    data_agg = data_agg.set_axis([*index_names, agg], axis="columns")
 
     # index with all possible combinations of ring & wedge values
     product_index = MultiIndex.from_product(
@@ -398,8 +420,7 @@ def line_chart(
 
     # populate any rows for missing ring/wedge combinations
     data_agg = (
-        data_agg
-        .set_index(index_names)
+        data_agg.set_index(index_names)
         .reindex(product_index)
         .reset_index(level="wedge")
     )
@@ -410,7 +431,7 @@ def line_chart(
     # convert aggregate function results to int64, if possible
     if (data_graph[agg] % 1 == 0).all():
         data_graph[agg] = data_graph[agg].astype("int64")
-    
+
     fig, ax = plt.subplots(figsize=(13.33, 7.5), dpi=96)
 
     # adjust subplots for custom title, subtitle and source text
@@ -462,82 +483,74 @@ def line_chart(
         x = list(range(line_data["wedge"].size))
 
         ax.plot(
-            x,
-            line_data[agg],
-            color=cmap(idx),
-            label=line_labels[i],
-            zorder=2
+            x, line_data[agg], color=cmap(idx), label=line_labels[i], zorder=2
         )
 
-        # custom style for final point
-        ax.plot(
-            x[-1],
-            line_data[agg].iloc[-1],
-            "o",
-            color=cmap(idx),
-            markersize=10,
-            alpha=0.3
-        )
+        point_args = (x[-1], line_data[agg].iloc[-1])
+        point_kwargs = {
+            "marker": "o",
+            "color": cmap(idx),
+        }
 
         # custom style for final point
-        ax.plot(
-            x[-1],
-            line_data[agg].iloc[-1],
-            "o",
-            color=cmap(idx),
-            markersize=5,
-        )
+        ax.plot(*point_args, **point_kwargs, markersize=10, alpha=0.3)
+        ax.plot(*point_args, **point_kwargs, markersize=5)
 
     # add legend
     ax.legend(loc="best", fontsize=12)
 
     # generate default text for missing chart_title & chart_subtitle values
     if default_text:
+        # read config/linechart.ini file
+        config.read(linechart_ini)
+
         if chart_title is None:
-            chart_title = "Line Chart"
+            chart_title = config.get("DEFAULT", "TITLE")
 
-    chart_subtitle_map = {
-        "YEAR_MONTH": "year & month",
-        "YEAR_WEEK": "year & week of year",
-        "WEEK_DAY": "week of year & day of week",
-        "DOW_HOUR": "day of week & hour of day",
-        "DAY_HOUR": "day of year & hour of day",
-    }
-    if chart_subtitle is None:
-        chart_subtitle = f"{agg.title()} by {chart_subtitle_map[mode]}"
+        if chart_subtitle is None:
+            mode_description = config.get("mode.description", mode)
+            chart_subtitle = f"{agg.title()} by {mode_description}"
 
-    annotations = json.loads(config_file.read_bytes()).get("line_chart", {})
+    fig_width, _ = (13.33, 17.5)
+    font_scale_factor = fig_width / 13.33
 
-    # chart title text
-    add_text(
-        ax=ax,
-        text=chart_title,
-        transform=fig.transFigure,
-        **annotations["chart_title"]
-    )
-        
-    # chart subtitle text
-    add_text(
-        ax=ax,
-        text=chart_subtitle,
-        transform=fig.transFigure,
-        **annotations["chart_subtitle"]
-    )
+    text_y = 0.95
+    text_spacing = 0.03
 
-    # chart reporting period text
-    add_text(
-        ax=ax,
-        text=chart_period,
-        transform=fig.transFigure,
-        **annotations["chart_period"]
-    )
+    if font_scale_factor > 1:
+        text_spacing = text_spacing * (font_scale_factor**0.1)
+    else:
+        text_spacing = text_spacing * font_scale_factor
+
+    # add title, subtitle and period text to the figure
+    for i, (text, fontsize, weight) in enumerate(
+        zip(  # text | fontsize | weight,
+            (chart_title, chart_subtitle, chart_period),
+            (14, 12, 10),
+            ("bold", "normal", "normal"),
+        )
+    ):
+        # chart title text
+        add_text(
+            ax=ax,
+            x=0.1,
+            y=text_y - (i * text_spacing),
+            text=text,
+            fontsize=fontsize * font_scale_factor,
+            weight=weight,
+            alpha=0.8,
+            transform=fig.transFigure,
+        )
 
     # chart source text
     add_text(
         ax=ax,
+        x=0.1,
+        y=0.1,
         text=chart_source,
+        fontsize=10 * font_scale_factor,
+        alpha=0.7,
         transform=fig.transFigure,
-        **annotations["chart_source"]
     )
 
     return data_graph, fig, ax
@@ -549,7 +562,7 @@ def _validate_chart_parameters(
     agg_column: Optional[str] = None,
     agg: Aggregation = "count",
     mode: str = "DAY_HOUR",
-    )  -> None:
+) -> None:
     """Validate chart parameters.
 
     Args:
@@ -565,16 +578,20 @@ def _validate_chart_parameters(
     Raises:
         AggregationColumnError: Expected aggregation column value.
         AggregationFunctionError: Unexpected aggregation function value.
+        KeyError: Column not in DataFrame.
         ModeError: Unexpected mode value is passed.
-        ValueError: Incompatible date_column dtype or empty DataFrame.
 
     Returns:
         None
     """
     if data.empty:
-        raise ValueError(f"DataFrame is empty.")
+        raise EmptyDataFrameError(data)
+    if date_column not in data.columns:
+        raise KeyError(f"Column {date_column=} not in DataFrame.")
+    if agg_column is not None and agg_column not in data.columns:
+        raise KeyError(f"Column {agg_column=} not in DataFrame.")
     if data[date_column].dtype.name != "datetime64[ns]":
-        raise ValueError(f"date_column dtype is not datetime64[ns].")
+        raise MissingDatetimeError(date_column)
     if mode not in VALID_MODES:
         raise ModeError(mode, VALID_MODES)
     if agg not in VALID_AGGREGATIONS:
