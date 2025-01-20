@@ -20,26 +20,79 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Functions:
+    add_colorbar: Add a colorbar to a figure, using the provided axis.
     add_text: Create annotation text on an Axes.
+    assign_ring_wedge_columns: Assign ring & wedge columns to a DataFrame.
+    calculate_figure_dimensions: Calculate an optimal data clock figure size.
 
-Types:
-    Aggregation: Keys representing aggregation functions.
-    Mode: Keys representing temporal bins used in each chart.
+Constants:
+    VALID_STYLES: Valid font styles.
 """
 
+import math
 from collections import defaultdict
-from typing import Literal, Optional, Tuple, get_args
+from typing import Optional, Tuple, get_args
 
+import numpy as np
+from matplotlib import colormaps
 from matplotlib.axes import Axes
+from matplotlib.cm import ScalarMappable
+from matplotlib.colorbar import Colorbar
+from matplotlib.colors import Normalize
+from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 from matplotlib.text import Text
+from numpy.typing import DTypeLike
 from pandas import DataFrame
 
-FontStyle = Literal["normal", "italic", "oblique"]
+from dataclocklib.typing import CmapNames, FontStyle, Mode
+
 VALID_STYLES: Tuple[FontStyle, ...] = get_args(FontStyle)
 
 
+def add_colorbar(
+    ax: Axes,
+    fig: Figure,
+    cmap_name: CmapNames,
+    vmax: float,
+    dtype: DTypeLike = np.float64,
+) -> Colorbar:
+    """Add a colorbar to a figure, sharing the provided axis.
+
+    Args:
+        ax (Axes): Chart Axis.
+        fig (Figure): Chart Figure.
+        dtype (DTypeLike): Colourbar values dtype.
+        cmap_name (CmapNames): Name of matplotlib colormap.
+        vmax (float): maximum value of the colorbar.
+        dtype (DTypeLike): Data type for colorbar values.
+
+    Returns:
+        A Colorbar object with a cmap and normalised cmap.
+    """
+    colorbar_ticks = np.linspace(1, vmax, 5, dtype=dtype)
+
+    cmap = colormaps.get_cmap(cmap_name)
+    cmap.set_under("w")
+    cmap_norm = Normalize(1, vmax)
+
+    colorbar = fig.colorbar(
+        ScalarMappable(norm=cmap_norm, cmap=cmap),
+        ax=ax,
+        orientation="vertical",
+        location="right",
+        ticks=colorbar_ticks,
+        shrink=0.5,
+        extend="min",
+        use_gridspec=False,
+    )
+
+    colorbar.ax.tick_params(direction="out")
+    return colorbar
+
+
 def add_text(
-    ax: Axes, x: int, y: int, text: Optional[str] = None, **kwargs
+    ax: Axes, x: float, y: float, text: Optional[str] = None, **kwargs
 ) -> Text:
     """Annotate a position on an axis denoted by xy with text.
 
@@ -57,10 +110,8 @@ def add_text(
 
 
 def assign_ring_wedge_columns(
-        data: DataFrame,
-        date_column: str,
-        mode: str
-    ) -> DataFrame:
+    data: DataFrame, date_column: str, mode: Mode
+) -> DataFrame:
     """Assign ring & wedge columns to a DataFrame based on mode.
 
     The mode value is mapped to a predetermined division of a larger unit of
@@ -106,3 +157,28 @@ def assign_ring_wedge_columns(
         mode_map[mode]["wedge"] = data[date_column].dt.hour
 
     return data.assign(**mode_map[mode]).astype({"ring": "int64"})
+
+
+def calculate_figure_dimensions(wedges: int) -> tuple[float, float]:
+    """Calculate an optimal data clock figure size based on wedge count.
+
+    For most data clock charts, a minimum of 0.70 inches of figure space per
+    wedge appears to work best. The best figure shape for this type of chart
+    is square, given the circular nature of the chart.
+
+    NOTE: The minimum figure size is capped at (10.0, 10.0).
+
+    Example:
+      # 'DOW_HOUR' mode has 24 wedges for each of the 7 rings
+      >>> calculate_figure_dimensions(168)
+      (11, 11)
+
+    Args:
+      wedges: Number of wedges (number of rings * wedges per ring).
+
+    Returns:
+      A tuple containing the height & width of the square figure in inches.
+    """
+    space_needed = wedges * 0.70
+    figure_size = float(max(math.ceil(math.sqrt(space_needed)), 10))
+    return figure_size, figure_size
