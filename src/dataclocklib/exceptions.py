@@ -30,6 +30,8 @@ Types:
 
 from typing import Iterable
 
+from pandas import DataFrame, Series
+
 
 class AggregationColumnError(ValueError):
     """Raised on missing aggregation column."""
@@ -58,6 +60,15 @@ class AggregationFunctionError(ValueError):
         super().__init__(msg)
 
 
+class EmptyDataFrameError(ValueError):
+    """Raised on empty DataFrame."""
+
+    def __init__(self, data: DataFrame):
+        """Initialise EmptyDataFrameError exception."""
+        msg = f"Unexpected empty DataFrame - {data.empty=}."
+        super().__init__(msg)
+
+
 class ModeError(ValueError):
     """Raised on incorrect chart mode value."""
 
@@ -68,4 +79,17 @@ class ModeError(ValueError):
             mode (str): Incorrect mode value.
         """
         msg = f"Unexpected mode value ({mode}): {valid_modes}."
+        super().__init__(msg)
+
+
+class MissingDatetimeError(ValueError):
+    """Raised on missing expected datetime64 dtype."""
+
+    def __init__(self, column: str):
+        """Initialise ModeError exception.
+
+        Args:
+            mode (str): Incorrect mode value.
+        """
+        msg = f"Expected datetime64[ns] dtype for date_column ({column})."
         super().__init__(msg)
