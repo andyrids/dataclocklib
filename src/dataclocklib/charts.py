@@ -41,6 +41,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from pandas import DataFrame, MultiIndex
+from pandas.compat.pickle_compat import NDArrayBacked
 
 from dataclocklib.exceptions import (
     AggregationColumnError,
@@ -53,7 +54,9 @@ from dataclocklib.typing import Aggregation, CmapNames, Mode
 from dataclocklib.utility import (
     add_colorbar,
     add_text,
-    assign_ring_wedge_columns,
+    add_wedge_labels,
+    aggregate_temporal_columns,
+    assign_temporal_columns,
     get_figure_dimensions,
 )
 
@@ -125,53 +128,27 @@ def dataclock(
     """
     _validate_chart_parameters(data, date_column, agg_column, agg, mode)
 
-    data = assign_ring_wedge_columns(data, date_column, mode)
-
-    # dict map for wedge min & max range based on mode
-    wedge_range_map = {
-        "YEAR_MONTH": tuple(calendar.month_name[1:]),
-        "YEAR_WEEK": range(1, 53),
-        "WEEK_DAY": tuple(calendar.day_name),
-        "DOW_HOUR": range(0, 24),
-        "DAY_HOUR": range(0, 24),
-    }
-
-    index_names = ["ring", "wedge"]
+    data = assign_temporal_columns(data, date_column, mode)
+    print(data.columns)
     agg_column = agg_column or date_column
-
-    # groupby 'ring' & 'wedge' values and apply aggregate function agg
-    data_agg = data.groupby(index_names, as_index=False)[agg_column].agg(agg)
-    data_agg = data_agg.set_axis([*index_names, agg], axis="columns")
-
-    # index with all possible combinations of ring & wedge values
-    product_index = MultiIndex.from_product(
-        [data_agg["ring"].unique(), wedge_range_map[mode]], names=index_names
-    )
-
-    # populate any rows for missing ring/wedge combinations
-    data_agg = (
-        data_agg.set_index(index_names).reindex(product_index).reset_index()
-    )
-
-    # replace NaN values created for missing missing ring/wedge combinations
-    data_graph = data_agg.fillna(0)
+    data_graph = aggregate_temporal_columns(data, agg_column, agg, mode)
 
     # convert aggregate function results to int64, if possible
     if (data_graph[agg] % 1 == 0).all():
         data_graph[agg] = data_graph[agg].astype("int64")
 
     # calculate optimal figure dimensions (0.85 per wedge)
-    fig_size = get_figure_dimensions(data_graph["wedge"].size)
+    figure_size = get_figure_dimensions(data_graph["wedge"].size)
 
     # base figure spacing (10%) made available for Text, Subtitle & Period
     base_spacing = 0.10
     # scale spacing relative to figure minimum width/height (10,10)
-    spacing_scale = fig_size[0] / 10
+    spacing_scale = figure_size[0] / 10
     # create a top margin for text elements, capped at 20%
     top_margin = min(base_spacing * (spacing_scale**0.5), 0.20)
 
     fig_kw.update(
-        {"figsize": fig_size, "dpi": 100, "constrained_layout": False}
+        {"figsize": figure_size, "dpi": 100, "constrained_layout": False}
     )
 
     # create figure with polar projection
@@ -223,51 +200,40 @@ def dataclock(
         ax, fig, cmap_name, data_graph[agg].max(), dtype=values_dtype
     )
 
-    # create x-axis labels
-    if mode not in ("DOW_HOUR", "DAY_HOUR"):
-        polar_labels = wedge_range_map[mode]
+    # create x-axis labels)
+    if mode == "WEEK_DAY":
+        wedge_labels = tuple(calendar.day_name)
+    elif mode == "YEAR_MONTH":
+        wedge_labels = tuple(calendar.month_name[1:])
     # custom x-axis labels for hour of day (00:00 - 23:00)
+    elif mode in ("DOW_HOUR", "DAY_HOUR"):
+        wedge_labels = [f"{x:02d}:00" for x in data_graph["wedge"].unique()]
     else:
-        polar_labels = [f"{x:02d}:00" for x in range(24)]
+        wedge_labels = tuple(map(str, data_graph["wedge"].unique()))
 
-    fig_width, _ = fig_size
-    font_scale_factor = fig_width / 11
+    figure_width, _ = figure_size
+    font_scale_factor = figure_width / 11
 
     ring_scale_factor = max_radius / 3
     ring_text_spacing = 0.2
 
-    if ring_scale_factor > 3:
-        ring_text_spacing = ring_text_spacing * (ring_scale_factor**0.61)
-    else:
-        ring_text_spacing = ring_text_spacing * ring_scale_factor
-
-    # place labels in the centre of each wedge
-    for idx, angle in enumerate(theta + width / 2):
-        # convert to degrees for text rotation
-        angle_deg = np.rad2deg(angle)
-
-        if (0 <= angle_deg < 90) or (270 <= angle_deg <= 360):
-            rotation = -angle_deg
-        else:
-            rotation = 180 - angle_deg
-
-        ax.text(
-            angle,
-            max_radius + ring_text_spacing,
-            polar_labels[idx],
-            rotation=rotation,
-            rotation_mode="anchor",
-            transform=ax.transData,
-            fontdict={"fontsize": 11 * font_scale_factor},
-            ha="center",
-            va="center",
-        )
+    add_wedge_labels(
+        ax,
+        font_scale_factor,
+        ring_scale_factor,
+        ring_text_spacing,
+        max_radius,
+        theta,
+        width,
+        wedge_labels
+    )
 
     # ring position starts from 1, creating a donut shape
     start_position = 1
 
     for ring_position, ring in enumerate(unique_rings):
         view = data_graph.loc[data_graph["ring"] == ring]
+
         graduated_colors = tuple(
             colorbar.cmap(colorbar.norm(i)) for i in view[agg]
         )
@@ -396,7 +362,7 @@ def line_chart(
     """
     _validate_chart_parameters(data, date_column, agg_column, agg, mode)
 
-    data = assign_ring_wedge_columns(data, date_column, mode)
+    data = assign_temporal_columns(data, date_column, mode)
 
     # dict map for wedge min & max range based on mode
     wedge_range_map = {
