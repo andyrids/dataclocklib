@@ -23,7 +23,7 @@ Functions:
     add_colorbar: Add a colorbar to a figure, using the provided axis.
     add_text: Create annotation text on an Axes.
     assign_ring_wedge_columns: Assign ring & wedge columns to a DataFrame.
-    calculate_figure_dimensions: Calculate an optimal data clock figure size.
+    get_figure_dimensions: Calculate an optimal data clock figure size.
 
 Constants:
     VALID_STYLES: Valid font styles.
@@ -34,6 +34,7 @@ from collections import defaultdict
 from typing import Optional, Tuple, get_args
 
 import numpy as np
+from dataclocklib.typing import Aggregation
 from matplotlib import colormaps
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
@@ -43,7 +44,7 @@ from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.text import Text
 from numpy.typing import DTypeLike
-from pandas import DataFrame
+from pandas import DataFrame, MultiIndex
 
 from dataclocklib.typing import CmapNames, FontStyle, Mode
 
@@ -159,7 +160,7 @@ def assign_ring_wedge_columns(
     return data.assign(**mode_map[mode]).astype({"ring": "int64"})
 
 
-def calculate_figure_dimensions(wedges: int) -> tuple[float, float]:
+def get_figure_dimensions(wedges: int) -> tuple[float, float]:
     """Calculate an optimal data clock figure size based on wedge count.
 
     For most data clock charts, a minimum of 0.70 inches of figure space per

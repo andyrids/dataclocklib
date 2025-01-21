@@ -54,7 +54,7 @@ from dataclocklib.utility import (
     add_colorbar,
     add_text,
     assign_ring_wedge_columns,
-    calculate_figure_dimensions,
+    get_figure_dimensions,
 )
 
 VALID_AGGREGATIONS: Tuple[Aggregation, ...] = get_args(Aggregation)
@@ -161,7 +161,7 @@ def dataclock(
         data_graph[agg] = data_graph[agg].astype("int64")
 
     # calculate optimal figure dimensions (0.85 per wedge)
-    fig_size = calculate_figure_dimensions(data_graph["wedge"].size)
+    fig_size = get_figure_dimensions(data_graph["wedge"].size)
 
     # base figure spacing (10%) made available for Text, Subtitle & Period
     base_spacing = 0.10
@@ -210,7 +210,6 @@ def dataclock(
 
     ax.yaxis.set_ticks(range(1, max_radius))
     ax.yaxis.set_ticklabels([])
-    ax.tick_params(axis="x", pad=5)
 
     ax.xaxis.grid(visible=True, color="black", alpha=0.8)
     ax.yaxis.grid(visible=True, color="black", alpha=0.8)
@@ -242,7 +241,8 @@ def dataclock(
     else:
         ring_text_spacing = ring_text_spacing * ring_scale_factor
 
-    for idx, angle in enumerate(theta):
+    # place labels in the centre of each wedge
+    for idx, angle in enumerate(theta + width / 2):
         # convert to degrees for text rotation
         angle_deg = np.rad2deg(angle)
 
