@@ -27,6 +27,7 @@ keywords = ["matplotlib", "dataclock", "visualisation", "analysis"]
 dependencies = [
     "matplotlib",
     "pandas[parquet]>=2.2.2",
+    "pypalettes>=0.1.5",
 ]
 
 [dependency-groups]

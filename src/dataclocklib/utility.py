@@ -31,7 +31,7 @@ Constants:
 
 import math
 from collections import defaultdict
-from typing import Iterable, Optional, Tuple, get_args, Sequence
+from typing import Optional, Tuple, get_args, Sequence
 
 import numpy as np
 from dataclocklib.typing import Aggregation
@@ -41,10 +41,10 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
-from matplotlib.lines import Line2D
 from matplotlib.text import Text
 from numpy.typing import DTypeLike, NDArray
 from pandas import DataFrame, MultiIndex
+from pypalettes import load_cmap
 
 from dataclocklib.exceptions import ModeError
 from dataclocklib.typing import CmapNames, FontStyle, Mode
@@ -55,7 +55,8 @@ VALID_STYLES: Tuple[FontStyle, ...] = get_args(FontStyle)
 def add_colorbar(
     ax: Axes,
     fig: Figure,
-    cmap_name: CmapNames,
+    cmap_name: str,
+    cmap_reverse: bool,
     vmax: float,
     dtype: DTypeLike = np.float64,
 ) -> Colorbar:
@@ -74,7 +75,7 @@ def add_colorbar(
     """
     colorbar_ticks = np.linspace(1, vmax, 5, dtype=dtype)
 
-    cmap = colormaps.get_cmap(cmap_name)
+    cmap = load_cmap(cmap_name, cmap_type="continuous", reverse=cmap_reverse)
     cmap.set_under("w")
     cmap_norm = Normalize(1, vmax)
 
@@ -146,7 +147,10 @@ def add_wedge_labels(
             rotation=rotation,
             rotation_mode="anchor",
             transform=ax.transData,
-            fontdict={"fontsize": 11 * font_scale_factor},
+            family="sans-serif",
+            fontsize= 11 * font_scale_factor,
+            weight="medium",
+            style="normal",
             ha="center",
             va="center",
         )
@@ -206,6 +210,7 @@ def aggregate_temporal_columns(
     if not set(columns).issubset(data.columns):
         raise ValueError(f"Expected DataFrame columns: {columns}")
     
+    unique_rings = data["ring"].unique()
     match mode:
         case "YEAR_MONTH":
             unique_wedges = tuple(range(1, 13))
@@ -214,6 +219,7 @@ def aggregate_temporal_columns(
         case "WEEK_DAY":
             unique_wedges = range(0, 7)
         case "DOW_HOUR":
+            unique_rings = range(0, 7)
             unique_wedges = range(0, 24)
         case "DAY_HOUR":
             unique_wedges = range(0, 24)
@@ -226,7 +232,7 @@ def aggregate_temporal_columns(
 
     # index with all possible combinations of ring & wedge values
     product_idx = MultiIndex.from_product(
-        [data_agg["ring"].unique(), unique_wedges], names=columns
+        [unique_rings, unique_wedges], names=columns
     )
 
     # populate any rows for missing ring/wedge combinations
