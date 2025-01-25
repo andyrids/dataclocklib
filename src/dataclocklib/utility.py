@@ -31,10 +31,9 @@ Constants:
 
 import math
 from collections import defaultdict
-from typing import Optional, Tuple, get_args, Sequence
+from typing import Optional, Sequence, Tuple, get_args
 
 import numpy as np
-from dataclocklib.typing import Aggregation
 from matplotlib import colormaps
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
@@ -47,7 +46,7 @@ from pandas import DataFrame, MultiIndex
 from pypalettes import load_cmap
 
 from dataclocklib.exceptions import ModeError
-from dataclocklib.typing import CmapNames, FontStyle, Mode
+from dataclocklib.typing import Aggregation, CmapNames, FontStyle, Mode
 
 VALID_STYLES: Tuple[FontStyle, ...] = get_args(FontStyle)
 
@@ -95,14 +94,14 @@ def add_colorbar(
 
 
 def add_wedge_labels(
-        ax: Axes,
-        font_scale_factor: float,
-        ring_scale_factor: float,
-        ring_text_spacing: float,
-        max_radius: int,
-        theta: NDArray,
-        width: float,
-        wedge_labels: Sequence[str]
+    ax: Axes,
+    font_scale_factor: float,
+    ring_scale_factor: float,
+    ring_text_spacing: float,
+    max_radius: int,
+    theta: NDArray,
+    width: float,
+    wedge_labels: Sequence[str],
 ) -> None:
     """Add scaled and rotated labels around each data clock wedge.
 
@@ -148,7 +147,7 @@ def add_wedge_labels(
             rotation_mode="anchor",
             transform=ax.transData,
             family="sans-serif",
-            fontsize= 11 * font_scale_factor,
+            fontsize=11 * font_scale_factor,
             weight="medium",
             style="normal",
             ha="center",
@@ -175,10 +174,7 @@ def add_text(
 
 
 def aggregate_temporal_columns(
-        data: DataFrame,
-        agg_column: str,
-        agg: Aggregation,
-        mode: Mode
+    data: DataFrame, agg_column: str, agg: Aggregation, mode: Mode
 ) -> DataFrame:
     """Aggregate values in agg_column using pass aggregate function.
 
@@ -209,7 +205,7 @@ def aggregate_temporal_columns(
     columns = ["ring", "wedge"]
     if not set(columns).issubset(data.columns):
         raise ValueError(f"Expected DataFrame columns: {columns}")
-    
+
     unique_rings = data["ring"].unique()
     match mode:
         case "YEAR_MONTH":
@@ -225,7 +221,7 @@ def aggregate_temporal_columns(
             unique_wedges = range(0, 24)
         case _:
             raise ModeError(mode, get_args(Mode))
-    
+
     # groupby 'ring' & 'wedge' values and apply aggregate function agg
     data_agg = data.groupby(columns, as_index=False)[agg_column].agg(agg)
     data_agg = data_agg.set_axis([*columns, agg], axis="columns")
@@ -268,7 +264,6 @@ def assign_temporal_columns(
     if mode == "YEAR_MONTH":
         mode_map[mode]["ring"] = data[date_column].dt.year
         mode_map[mode]["wedge"] = data[date_column].dt.month
-        #data[date_column].dt.month_name()
     # year | weeks 1 - 52
     if mode == "YEAR_WEEK":
         mode_map[mode]["ring"] = data[date_column].dt.year

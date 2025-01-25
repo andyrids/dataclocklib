@@ -402,7 +402,7 @@ wheels = [
 
 [[package]]
 name = "dataclocklib"
-version = "0.1.9.dev5+gb887bd6.d20250122"
+version = "0.1.9.dev6+g0f8060e.d20250125"
 source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },

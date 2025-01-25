@@ -199,7 +199,6 @@ def dataclock(
     ax.spines["polar"].set_visible(True)
     ax.spines["polar"].set_color(spine_color)
     ax.spines["inner"].set_color("w")
-    
 
     values_dtype = (np.float64, np.int64)[agg in ("count", "sum")]
     # we can use colorbar.cmap(colorbar.norm(<aggregation value>)),
@@ -233,7 +232,7 @@ def dataclock(
         max_radius,
         theta,
         width,
-        wedge_labels
+        wedge_labels,
     )
 
     # ring position starts from 1, creating a donut shape
