@@ -84,7 +84,7 @@ tmp_path_retention_count = 1
 tmp_path_retention_policy = "failed"
 
 [tool.bumpversion]
-current_version = "0.1.8"
+current_version = "0.1.9"
 commit = true
 commit_args = "--no-verify"
 tag = true
