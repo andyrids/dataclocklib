@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Added | Changed | Deprecated | Removed | Fixed -->
 
+## [0.2.0] - 2025-01-23
+
+### Added
+
+- PyPalettes library dependency, providing 2500+ palettes.
+- Colormap reverse flag parameter added to dataclock function.
+- Chart polar spine color parameter added to dataclock.
+- Chart polar grid color parameter added to dataclock.
+
+### Changed
+
+- Wedge label logic moved to `dataclocklib.utility.add_wedge_labels`.
+- Temporal aggregation logic moved to `dataclocklib.utility.aggregate_temporal_columns`.
+
 ## [0.1.8] - 2025-01-20
 
 ### Added
@@ -25,7 +39,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ColorMap` type changed to `CmapNames`.
 - Moved colorbar logic to `dataclocklib.utility.add_colorbar`.
 - Dataclock arguments; `chart_title`, `chart_subtitle`, `chart_period`, `chart_source` are keyword only.
-
 
 ## [0.1.7] - 2025-01-15
 

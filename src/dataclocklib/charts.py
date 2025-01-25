@@ -40,7 +40,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from pandas import DataFrame, MultiIndex
+from pandas import DataFrame
 
 from dataclocklib.exceptions import (
     AggregationColumnError,
@@ -53,8 +53,10 @@ from dataclocklib.typing import Aggregation, CmapNames, Mode
 from dataclocklib.utility import (
     add_colorbar,
     add_text,
-    assign_ring_wedge_columns,
-    calculate_figure_dimensions,
+    add_wedge_labels,
+    aggregate_temporal_columns,
+    assign_temporal_columns,
+    get_figure_dimensions,
 )
 
 VALID_AGGREGATIONS: Tuple[Aggregation, ...] = get_args(Aggregation)
@@ -74,7 +76,10 @@ def dataclock(
     agg_column: Optional[str] = None,
     agg: Aggregation = "count",
     mode: Mode = "DAY_HOUR",
-    cmap_name: CmapNames = "RdYlGn_r",
+    cmap_name: str = "RdYlGn_r",
+    cmap_reverse: bool = False,
+    spine_color: str = "darkslategrey",
+    grid_color: str = "darkslategrey",
     default_text: bool = True,
     *,  # keyword only arguments
     chart_title: Optional[str] = None,
@@ -91,6 +96,8 @@ def dataclock(
     time into rings and subdivides it by a smaller unit of time into
     wedges, creating a set of temporal bins.
 
+    TIP: Palettes - https://python-graph-gallery.com/color-palette-finder/
+
     Args:
         data (DataFrame): DataFrame containing data to visualise.
         date_column (str): Name of DataFrame datetime64 column.
@@ -100,9 +107,11 @@ def dataclock(
         mode (Mode, optional): A mode key representing the
             temporal bins used in the chart; 'YEAR_MONTH',
             'YEAR_WEEK', 'WEEK_DAY', 'DOW_HOUR' & 'DAY_HOUR'.
-        cmap_name: (ColourMap, optional): Matplotlib colormap name used
+        cmap_name: (str, optional): Name of a matplotlib/PyPalettes colormap,
             to symbolise the temporal bins; 'RdYlGn_r', 'CMRmap_r',
-            'inferno_r', 'YlGnBu_r' & 'viridis'.
+            'inferno_r', 'Alkalay2', 'viridis', 'a_palette' etc.
+        cmap_reverse (bool): Reverse cmap colors flag.
+        spine_color (str): Name of color to style the polar axis spines.
         default_text (bool, optional): Flag to generating default chart
             annotations for the chart_title ('Data Clock Chart') and
             chart_subtitle ('[agg] by [period] (rings) & [period] (wedges)').
@@ -125,54 +134,27 @@ def dataclock(
     """
     _validate_chart_parameters(data, date_column, agg_column, agg, mode)
 
-    data = assign_ring_wedge_columns(data, date_column, mode)
-
-    # dict map for wedge min & max range based on mode
-    wedge_range_map = {
-        "YEAR_MONTH": tuple(calendar.month_name[1:]),
-        "YEAR_WEEK": range(1, 53),
-        "WEEK_DAY": tuple(calendar.day_name),
-        "DOW_HOUR": range(0, 24),
-        "DAY_HOUR": range(0, 24),
-    }
-
-    index_names = ["ring", "wedge"]
+    data = assign_temporal_columns(data, date_column, mode)
     agg_column = agg_column or date_column
-
-    # groupby 'ring' & 'wedge' values and apply aggregate function agg
-    data_agg = data.groupby(index_names, as_index=False)[agg_column].agg(agg)
-    data_agg = data_agg.set_axis([*index_names, agg], axis="columns")
-
-    # index with all possible combinations of ring & wedge values
-    product_index = MultiIndex.from_product(
-        [data_agg["ring"].unique(), wedge_range_map[mode]], names=index_names
-    )
-
-    # populate any rows for missing ring/wedge combinations
-    data_agg = (
-        data_agg.set_index(index_names).reindex(product_index).reset_index()
-    )
-
-    # replace NaN values created for missing missing ring/wedge combinations
-    data_graph = data_agg.fillna(0)
+    data_graph = aggregate_temporal_columns(data, agg_column, agg, mode)
 
     # convert aggregate function results to int64, if possible
     if (data_graph[agg] % 1 == 0).all():
         data_graph[agg] = data_graph[agg].astype("int64")
 
     # calculate optimal figure dimensions (0.85 per wedge)
-    fig_size = calculate_figure_dimensions(data_graph["wedge"].size)
+    figure_size = get_figure_dimensions(data_graph["wedge"].size)
 
     # base figure spacing (10%) made available for Text, Subtitle & Period
     base_spacing = 0.10
     # scale spacing relative to figure minimum width/height (10,10)
-    spacing_scale = fig_size[0] / 10
+    spacing_scale = figure_size[0] / 10
     # create a top margin for text elements, capped at 20%
     top_margin = min(base_spacing * (spacing_scale**0.5), 0.20)
 
-    fig_kw.update(
-        {"figsize": fig_size, "dpi": 100, "constrained_layout": False}
-    )
+    fig_kw.update({"figsize": figure_size, "constrained_layout": False})
+    if "dpi" not in fig_kw:
+        fig_kw.update({"dpi": 100})
 
     # create figure with polar projection
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, **fig_kw)
@@ -210,64 +192,55 @@ def dataclock(
 
     ax.yaxis.set_ticks(range(1, max_radius))
     ax.yaxis.set_ticklabels([])
-    ax.tick_params(axis="x", pad=5)
 
-    ax.xaxis.grid(visible=True, color="black", alpha=0.8)
-    ax.yaxis.grid(visible=True, color="black", alpha=0.8)
+    ax.xaxis.grid(visible=True, color=grid_color, alpha=0.6)
+    ax.yaxis.grid(visible=True, color=grid_color, alpha=0.6)
 
     ax.spines["polar"].set_visible(True)
+    ax.spines["polar"].set_color(spine_color)
+    ax.spines["inner"].set_color("w")
 
     values_dtype = (np.float64, np.int64)[agg in ("count", "sum")]
     # we can use colorbar.cmap(colorbar.norm(<aggregation value>)),
     # to return the RGB values to represent each aggregation result
     colorbar = add_colorbar(
-        ax, fig, cmap_name, data_graph[agg].max(), dtype=values_dtype
+        ax, fig, cmap_name, cmap_reverse, data_graph[agg].max(), values_dtype
     )
 
-    # create x-axis labels
-    if mode not in ("DOW_HOUR", "DAY_HOUR"):
-        polar_labels = wedge_range_map[mode]
+    # create x-axis labels)
+    if mode == "WEEK_DAY":
+        wedge_labels = tuple(calendar.day_name)
+    elif mode == "YEAR_MONTH":
+        wedge_labels = tuple(calendar.month_name[1:])
     # custom x-axis labels for hour of day (00:00 - 23:00)
+    elif mode in ("DOW_HOUR", "DAY_HOUR"):
+        wedge_labels = [f"{x:02d}:00" for x in data_graph["wedge"].unique()]
     else:
-        polar_labels = [f"{x:02d}:00" for x in range(24)]
+        wedge_labels = tuple(map(str, data_graph["wedge"].unique()))
 
-    fig_width, _ = fig_size
-    font_scale_factor = fig_width / 11
+    figure_width, _ = figure_size
+    font_scale_factor = figure_width / 11
 
     ring_scale_factor = max_radius / 3
     ring_text_spacing = 0.2
 
-    if ring_scale_factor > 3:
-        ring_text_spacing = ring_text_spacing * (ring_scale_factor**0.61)
-    else:
-        ring_text_spacing = ring_text_spacing * ring_scale_factor
-
-    for idx, angle in enumerate(theta):
-        # convert to degrees for text rotation
-        angle_deg = np.rad2deg(angle)
-
-        if (0 <= angle_deg < 90) or (270 <= angle_deg <= 360):
-            rotation = -angle_deg
-        else:
-            rotation = 180 - angle_deg
-
-        ax.text(
-            angle,
-            max_radius + ring_text_spacing,
-            polar_labels[idx],
-            rotation=rotation,
-            rotation_mode="anchor",
-            transform=ax.transData,
-            fontdict={"fontsize": 11 * font_scale_factor},
-            ha="center",
-            va="center",
-        )
+    add_wedge_labels(
+        ax,
+        font_scale_factor,
+        ring_scale_factor,
+        ring_text_spacing,
+        max_radius,
+        theta,
+        width,
+        wedge_labels,
+    )
 
     # ring position starts from 1, creating a donut shape
     start_position = 1
 
     for ring_position, ring in enumerate(unique_rings):
         view = data_graph.loc[data_graph["ring"] == ring]
+
         graduated_colors = tuple(
             colorbar.cmap(colorbar.norm(i)) for i in view[agg]
         )
@@ -376,13 +349,14 @@ def line_chart(
         mode (Mode, optional): A mode key representing the
             temporal bins used in the chart; 'YEAR_MONTH',
             'YEAR_WEEK', 'WEEK_DAY', 'DOW_HOUR' & 'DAY_HOUR'.
+        default_text (bool, optional): Flag to generating default chart
+            annotations for the chart_title ('Data Clock Chart') and
+            chart_subtitle ('[agg] by [period] (rings) & [period] (wedges)').
         chart_title (str, optional): Chart title.
         chart_subtitle (str, optional): Chart subtitle.
         chart_period (str, optional): Chart reporting period.
         chart_source (str, optional): Chart data source.
-        default_text (bool, optional): Flag to generating default chart
-            annotations for the chart_title ('Data Clock Chart') and
-            chart_subtitle ('[agg] by [period] (rings) & [period] (wedges)').
+        fig_kw (dict): Chart figure kwargs passed to pyplot.subplots.
 
     Raises:
         AggregationColumnError: Expected aggregation column value.
@@ -396,7 +370,7 @@ def line_chart(
     """
     _validate_chart_parameters(data, date_column, agg_column, agg, mode)
 
-    data = assign_ring_wedge_columns(data, date_column, mode)
+    data = assign_temporal_columns(data, date_column, mode)
 
     # dict map for wedge min & max range based on mode
     wedge_range_map = {
@@ -407,26 +381,10 @@ def line_chart(
         "DAY_HOUR": range(0, 24),
     }
 
-    index_names = ["ring", "wedge"]
     agg_column = agg_column or date_column
 
-    data_agg = data.groupby(index_names, as_index=False)[agg_column].agg(agg)
-    data_agg = data_agg.set_axis([*index_names, agg], axis="columns")
-
-    # index with all possible combinations of ring & wedge values
-    product_index = MultiIndex.from_product(
-        [data_agg["ring"].unique(), wedge_range_map[mode]], names=index_names
-    )
-
-    # populate any rows for missing ring/wedge combinations
-    data_agg = (
-        data_agg.set_index(index_names)
-        .reindex(product_index)
-        .reset_index(level="wedge")
-    )
-
-    # replace NaN values created for missing missing ring/wedge combinations
-    data_graph = data_agg.fillna(0)
+    data_agg = aggregate_temporal_columns(data, agg_column, agg, mode)
+    data_graph = data_agg.set_index("ring")
 
     # convert aggregate function results to int64, if possible
     if (data_graph[agg] % 1 == 0).all():
@@ -436,7 +394,7 @@ def line_chart(
 
     # adjust subplots for custom title, subtitle and source text
     plt.subplots_adjust(
-        left=None, bottom=0.2, right=None, top=0.85, wspace=None, hspace=None
+        left=None, bottom=0.25, right=None, top=0.85, wspace=None, hspace=None
     )
 
     # set white figure background
@@ -455,11 +413,18 @@ def line_chart(
 
     n_wedges = data_graph["wedge"].nunique()
     unique_wedges = data_graph["wedge"].unique()
-    if mode in ("DOW_HOUR", "DAY_HOUR"):
-        xaxis_labels = map(lambda x: f"{x:02d}:00", unique_wedges)
-        ax.set_xticks(range(n_wedges), xaxis_labels, rotation=45, ha="right")
+
+    # create x-axis labels)
+    if mode == "WEEK_DAY":
+        xaxis_labels = tuple(calendar.day_name)
+    elif mode == "YEAR_MONTH":
+        xaxis_labels = tuple(calendar.month_name[1:])
+    # custom x-axis labels for hour of day (00:00 - 23:00)
+    elif mode in ("DOW_HOUR", "DAY_HOUR"):
+        xaxis_labels = [f"{x:02d}:00" for x in unique_wedges]
     else:
-        ax.set_xticks(range(n_wedges), unique_wedges, rotation=45, ha="right")
+        xaxis_labels = tuple(map(str, unique_wedges))
+    ax.set_xticks(range(n_wedges), xaxis_labels, rotation=45, ha="right")
     ax.set_xlabel("", fontsize=12, labelpad=10)
 
     ax.set_ylabel(agg.title(), fontsize=12, labelpad=10)
@@ -530,7 +495,7 @@ def line_chart(
             ("bold", "normal", "normal"),
         )
     ):
-        # chart title text
+        # chart text
         add_text(
             ax=ax,
             x=0.1,

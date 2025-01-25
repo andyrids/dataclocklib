@@ -35,22 +35,17 @@ data = pd.read_parquet(
     "https://raw.githubusercontent.com/andyrids/dataclocklib/main/tests/data/traffic_data.parquet.gzip"
 )
 
-graph_data, fig, ax = dataclock(
-    data=data.query("Date_Time.dt.year.eq(2015)"),
+chart_data, fig, ax = dataclock(
+    data=data,
     date_column="Date_Time",
-    agg_column="Number_of_Casualties",
-    agg="sum",
     mode="DOW_HOUR",
-    cmap_name="CMRmap_r",
-    chart_title="UK Traffic Accident Casualties",
-    chart_subtitle=None,
-    chart_period="Period: 2015",
-    chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data",
-    default_text=True,
+    spine_color="darkslategrey",
+    grid_color="black",
+    default_text=False
 )
 ```
 
-![Data clock chart](https://raw.githubusercontent.com/andyrids/dataclocklib/main/docs/source/_static/images/sphinx_index_chart_1.png)
+![Data clock chart](https://raw.githubusercontent.com/andyrids/dataclocklib/main/docs/source/_static/images/sphinx_guide_chart_1.png)
 
 ```python
 import pandas as pd
@@ -60,22 +55,72 @@ data = pd.read_parquet(
     "https://raw.githubusercontent.com/andyrids/dataclocklib/main/tests/data/traffic_data.parquet.gzip"
 )
 
-graph_data, fig, ax = dataclock(
-    data=data.query("Date_Time.dt.year.eq(2010)"),
+chart_data, fig, ax = dataclock(
+    data=data,
     date_column="Date_Time",
-    agg_column=None,
-    agg="count",
     mode="DOW_HOUR",
-    cmap_name="RdYlGn_r",
-    chart_title="UK Traffic Accidents",
-    chart_subtitle=None,
-    chart_period="Period: 2010",
-    chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data",
-    default_text=True,
+    spine_color="darkslategrey",
+    grid_color="black",
+    default_text=True
 )
 ```
 
-![Data clock chart](https://raw.githubusercontent.com/andyrids/dataclocklib/main/docs/source/_static/images/sphinx_index_chart_2.png)
+![Data clock chart](https://raw.githubusercontent.com/andyrids/dataclocklib/main/docs/source/_static/images/sphinx_guide_chart_2.png)
+
+```python
+import pandas as pd
+from dataclocklib.charts import dataclock
+
+data = pd.read_parquet(
+    "https://raw.githubusercontent.com/andyrids/dataclocklib/main/tests/data/traffic_data.parquet.gzip"
+)
+
+chart_data, fig, ax = dataclock(
+    data=data,
+    date_column="Date_Time",
+    mode="DOW_HOUR",
+    default_text=True,
+    spine_color="darkslategrey",
+    grid_color="black",
+    chart_title="**CUSTOM TITLE**",
+    chart_subtitle="**CUSTOM SUBTITLE**",
+    chart_period="**CUSTOM PERIOD**",
+    chart_source="Source: UK Department for Transport",
+    dpi=150
+)
+```
+
+![Data clock chart](https://raw.githubusercontent.com/andyrids/dataclocklib/main/docs/source/_static/images/sphinx_guide_chart_3.png)
+
+```python
+import pandas as pd
+from dataclocklib.charts import dataclock
+
+data = pd.read_parquet(
+    "https://raw.githubusercontent.com/andyrids/dataclocklib/main/tests/data/traffic_data.parquet.gzip"
+)
+
+chart_data, fig, ax = dataclock(
+    data=data.query("Date_Time.dt.year.eq(2010)"),
+    date_column="Date_Time",
+    agg_column="Number_of_Casualties",
+    agg="sum",
+    mode="DOW_HOUR",
+    cmap_name="X26",
+    cmap_reverse=True,
+    spine_color="honeydew",
+    grid_color="honeydew",
+    default_text=True,
+    chart_title="UK Traffic Accident Casualties",
+    chart_subtitle=None,
+    chart_period="Period: 2010",
+    chart_source="Source: https://data.dft.gov.uk/road-accidents-safety-data/dft-road-casualty-statistics-collision-last-5-years.csv",
+    dpi=300
+)
+```
+
+![Data clock chart](https://raw.githubusercontent.com/andyrids/dataclocklib/main/docs/source/_static/images/sphinx_guide_chart_4.png)
+
 
 ## Installation
 
