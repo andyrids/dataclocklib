@@ -85,15 +85,20 @@ The table below details the currently supported chart modes and the correspondin
       from dataclocklib.charts import dataclock
 
       graph_data, fig, ax = dataclock(
-         data=data.query("Date_Time.dt.year.ge(2015)"),
-         date_column="Date_Time",
-         agg_column="Number_of_Casualties",
+         data=data.query("date_time.dt.year.ge(2019)"),
+         date_column="date_time",
+         agg_column="number_of_casualties",
          agg="sum",
          mode="DOW_HOUR",
          cmap_name="CMRmap_r",
-         chart_title="UK Car Accident Casualties 2015",
+         cmap_reverse=False,
+         spine_color="darkslategrey",
+         grid_color="black",
+         default_text=True,
+         chart_title="UK Car Accident Casualties",
          chart_subtitle=None,
-         chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data"
+         chart_period="Period: 2019",
+         chart_source="Source: www.kaggle.com/datasets/silicon99/dft-accident-data"
       )
 
 .. figure:: _static/images/sphinx_index_chart_1.png
@@ -103,19 +108,25 @@ The table below details the currently supported chart modes and the correspondin
 .. code-block::
    :caption: Chart creation example using UK Department for Transport data.
 
-      from dataclocklib.charts import dataclock
+      datetime_start = "date_time.dt.year.ge(2020)"
+      datetime_stop = "date_time.dt.year.le(2022)"
 
       graph_data, fig, ax = dataclock(
-         data=data.query("Date_Time.dt.year.eq(2010)"),
-         date_column="Date_Time",
+         data=data.query(f"{datetime_start} & {datetime_stop}"),
+         date_column="date_time",
          agg_column=None,
          agg="count",
-         mode="DOW_HOUR",
-         cmap_name="RdYlGn_r",
+         mode="YEAR_MONTH",
+         cmap_name="pal12",
+         cmap_reverse=True,
+         spine_color="black",
+         grid_color="black",
          default_text=True,
-         chart_title="UK Car Accidents 2010",
+         chart_title="UK Car Accident Casualties",
          chart_subtitle=None,
-         chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data"
+         chart_period="Period: 2020 - 2022",
+         chart_source="Source: www.kaggle.com/datasets/silicon99/dft-accident-data",
+         dpi=150
       )
 
 .. figure:: _static/images/sphinx_index_chart_2.png
@@ -125,23 +136,25 @@ The table below details the currently supported chart modes and the correspondin
 .. code-block::
    :caption: Chart creation example using UK Department for Transport data.
 
-      from dataclocklib.charts import dataclock
-
-      datetime_start = "Date_Time.ge('2010-01-1')"
-      datetime_stop = "Date_Time.le('2015-12-31')"
-      severity = "Accident_Severity.eq(1)"
+      datetime_start = "date_time.ge('2019-01')"
+      datetime_stop = "date_time.le('2023-01')"
 
       graph_data, fig, ax = dataclock(
-         data=data.query(f"{datetime_start} & {datetime_stop} & {severity}"),
-         date_column="Date_Time",
-         agg_column="Number_of_Casualties",
-         agg="sum",
-         mode="YEAR_MONTH",
-         cmap_name="YlGnBu_r",
+         data=data.query(f"{datetime_start} & {datetime_stop}"),
+         date_column="date_time",
+         agg_column=None,
+         agg="count",
+         mode="YEAR_WEEK",
+         cmap_name="Avedon",
+         cmap_reverse=True,
+         spine_color="black",
+         grid_color="black",
          default_text=True,
-         chart_title="UK Fatal Car Accident Casualties 2010 - 2015",
+         chart_title="UK Car Accident Casualties",
          chart_subtitle=None,
-         chart_source="www.kaggle.com/datasets/silicon99/dft-accident-data"
+         chart_period="Period: 2019 - 2022",
+         chart_source="Source: www.kaggle.com/datasets/silicon99/dft-accident-data",
+         dpi=150
       )
 
 .. figure:: _static/images/sphinx_index_chart_3.png
