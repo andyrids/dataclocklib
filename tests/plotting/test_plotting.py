@@ -1,42 +1,27 @@
 """Matplotlib image comparison unit test module.
 
-Author: Andrew Ridyard.
-
-License: GNU General Public License v3 or later.
-
-Copyright (C): 2025.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 Functions:
     test_baseline: Image comparison test function.
+
+License:
+    SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 import pathlib
 
 import pandas as pd
 import pytest
+from matplotlib.figure import Figure
 
 from dataclocklib.charts import dataclock
 
-tests_directory = pathlib.Path("__file__").parent / "tests"
+tests_directory = pathlib.Path(__file__).parent.parent
 data_file = tests_directory / "data" / "traffic_data.parquet.gzip"
 traffic_data = pd.read_parquet(data_file.as_posix())
 
 
 @pytest.mark.mpl_image_compare
-def test_baseline_year_month_chart():
+def test_baseline_year_month_chart() -> Figure:
     """Image comparison test function.
 
     This function generates a baseline image, after running the pytest
@@ -67,7 +52,7 @@ def test_baseline_year_month_chart():
 
 
 @pytest.mark.mpl_image_compare
-def test_baseline_week_day_chart():
+def test_baseline_week_day_chart() -> Figure:
     """Image comparison test function.
 
     This function generates a baseline image, after running the pytest
@@ -100,7 +85,7 @@ def test_baseline_week_day_chart():
 
 
 @pytest.mark.mpl_image_compare
-def test_baseline_dow_hour_chart():
+def test_baseline_dow_hour_chart() -> Figure:
     """Image comparison test function.
 
     This function generates a baseline image, after running the pytest
@@ -131,7 +116,7 @@ def test_baseline_dow_hour_chart():
 
 
 @pytest.mark.mpl_image_compare
-def test_baseline_day_hour_chart():
+def test_baseline_day_hour_chart() -> Figure:
     """Image comparison test function.
 
     This function generates a baseline image, after running the pytest

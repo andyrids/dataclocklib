@@ -1,0 +1,7 @@
+# Normalise line endings to LF in the repository and in working trees on all OSes
+* text=auto eol=lf
+
+# Binary files: never touch line endings or diff as text
+*.png binary
+*.gzip binary
+*.parquet binary

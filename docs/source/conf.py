@@ -1,44 +1,16 @@
 """Configuration file for the Sphinx documentation builder.
 
-Author: Andrew Ridyard.
-
-License: GNU General Public License v3 or later.
-
-Copyright (C): 2025.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+License:
+    SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-# Path setup
-# If extensions (or modules to document with autodoc) are in another
-# directory, add these directories to sys.path here. If the directory
-# is relative to the documentation root, use os.path.abspath to make
-# it absolute, like shown here.
-import pathlib
-import sys
 from importlib.metadata import version as _version
-
-docs_dir = pathlib.Path(__file__).parent.parent
-package_dir = docs_dir.parent / "src" / "dataclocklib"
-
-sys.path.insert(0, package_dir.as_posix())
 
 # Project information
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "dataclocklib"
-copyright = "2025, Andrew Ridyard"
+project_copyright = "2024-2026, Andrew Ridyard"
 author = "Andrew Ridyard"
 
 # The full version, including alpha/beta/rc tags
@@ -60,12 +32,17 @@ extensions = [
     # "sphinx.ext.inheritance_diagram",
 ]
 
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ["_templates"]
-
 # List of patterns, relative to source directory, that match files and
 # exclude_patterns; "_build", "Thumbs.db", ".DS_Store"
 exclude_patterns = []
+
+# autodoc: types are rendered in the parameter descriptions, not the signature
+autodoc_typehints = "description"
+autodoc_member_order = "bysource"
+
+# myst-nb: render the outputs stored in the notebooks; never execute them
+# (execution would install packages and download data over the network)
+nb_execution_mode = "off"
 
 
 # Options for HTML output

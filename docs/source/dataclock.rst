@@ -1,43 +1,44 @@
 Dataclock API
 =============
 
-The main chart function is :class:`dataclock`.
+The main chart function is :func:`~dataclocklib.charts.dataclock`.
 
 Dataclock
 ---------
 
-.. autoclass:: charts.dataclock
-   :members:
+.. autofunction:: dataclocklib.charts.dataclock
+
+.. autofunction:: dataclocklib.charts.line_chart
 
 Utility
 -------
 
-.. autoclass:: utility.add_colorbar
-   :members:
+.. autofunction:: dataclocklib.utility.add_colorbar
 
-.. autoclass:: utility.add_text
-   :members:
+.. autofunction:: dataclocklib.utility.add_text
 
-.. autoclass:: utility.assign_ring_wedge_columns
-   :members:
+.. autofunction:: dataclocklib.utility.add_wedge_labels
 
-.. autoclass:: utility.calculate_figure_dimensions
-   :members:
+.. autofunction:: dataclocklib.utility.assign_temporal_columns
+
+.. autofunction:: dataclocklib.utility.aggregate_temporal_columns
+
+.. autofunction:: dataclocklib.utility.get_figure_dimensions
 
 Exceptions
 ----------
 
-.. autoclass:: exceptions.AggregationColumnError
+.. autoclass:: dataclocklib.exceptions.AggregationColumnError
    :members:
 
-.. autoclass:: exceptions.AggregationFunctionError
+.. autoclass:: dataclocklib.exceptions.AggregationFunctionError
    :members:
 
-.. autoclass:: exceptions.EmptyDataFrameError
+.. autoclass:: dataclocklib.exceptions.EmptyDataFrameError
    :members:
 
-.. autoclass:: exceptions.MissingDatetimeError
+.. autoclass:: dataclocklib.exceptions.MissingDatetimeError
    :members:
 
-.. autoclass:: exceptions.ModeError
+.. autoclass:: dataclocklib.exceptions.ModeError
    :members:

@@ -1,0 +1,52 @@
+#:schema https://raw.githubusercontent.com/j178/prek/refs/heads/master/prek.schema.json
+
+[[repos]]
+repo = "https://gitlab.com/andyrids/pkgdx"
+rev = "v0.3.0"
+
+[[repos.hooks]]
+id = "pkgdx-lint"
+name = "Lint [Ruff]"
+
+[[repos.hooks]]
+id = "pkgdx-format"
+name = "Format [Ruff]"
+
+[[repos.hooks]]
+id = "pkgdx-markdown"
+name = "Check Markdown [PyMarkdown]"
+
+[[repos.hooks]]
+id = "pkgdx-secrets"
+name = "Detect Secrets [detect-secrets]"
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "pkgdx-typing"
+name = "Typing [Mypy]"
+entry = "uv run pkgdx-typing-hook"
+# workaround: pkgdx v0.3.0 ships this hook with no target (args = [])
+args = ["src"]
+language = "system"
+types_or = ["python", "pyi"]
+exclude = "tests/"
+require_serial = true
+pass_filenames = false
+verbose = true
+
+[[repos]]
+repo = "builtin"
+
+[[repos.hooks]]
+id = "check-toml"
+name = "Check TOML [Builtin]"
+
+[[repos.hooks]]
+id = "check-yaml"
+name = "Check YAML [Builtin]"
+
+[[repos.hooks]]
+id = "detect-private-key"
+name = "Detect PEM [Builtin]"

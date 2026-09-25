@@ -70,13 +70,13 @@ The table below details the currently supported chart modes and the correspondin
 +============+==================+==================+===============================================+
 | YEAR_MONTH | Years            | Months           | Years / January - December.                   |
 +------------+------------------+------------------+-----------------------------------------------+
-| YEAR_WEEK  | Years            | Weeks            | Years / weeks 1 - 52.                         |
+| YEAR_WEEK  | Years            | Weeks            | Calendar years / weeks 1 - 52.                |
 +------------+------------------+------------------+-----------------------------------------------+
-| WEEK_DAY   | Weeks            | Days of the week | Weeks 1 - 52 / Monday - Sunday.               |
+| WEEK_DAY   | Weeks            | Days of the week | ISO weeks / Monday - Sunday.                  |
 +------------+------------------+------------------+-----------------------------------------------+
 | DOW_HOUR   | Days of the week | Hour of day      | Monday - Sunday / 24 hours.                   |
 +------------+------------------+------------------+-----------------------------------------------+
-| DAY_HOUR   | Days             | Hour of day      | Days 1 - 356 / 24 hours.                      |
+| DAY_HOUR   | Days             | Hour of day      | Days 1 - 366 / 24 hours.                      |
 +------------+------------------+------------------+-----------------------------------------------+
 
 .. code-block::
@@ -137,7 +137,7 @@ The table below details the currently supported chart modes and the correspondin
    :caption: Chart creation example using UK Department for Transport data.
 
       datetime_start = "date_time.ge('2019-01')"
-      datetime_stop = "date_time.le('2023-01')"
+      datetime_stop = "date_time.lt('2023-01')"
 
       graph_data, fig, ax = dataclock(
          data=data.query(f"{datetime_start} & {datetime_stop}"),

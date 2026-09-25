@@ -4,10 +4,12 @@ about: Report parts of the docs that are wrong or unclear
 labels: documentation, bug
 ---
 
-<!--To help us understand and resolve your issue, please fill out the form to the best of your ability.-->
-<!--You can feel free to delete the sections that do not apply.-->
+# Documentation
 
-### Problem
+<!--To help us understand and resolve your issue, please fill out the form to the best of your
+ability. You can feel free to delete the sections that do not apply.-->
+
+## Problem
 
 <!--
 If you are referencing an existing piece of documentation or example please provide a link.
@@ -17,8 +19,7 @@ If you are referencing an existing piece of documentation or example please prov
 * There is no example showing how to do [...]
 -->
 
-
-### Suggested Improvement
+## Suggested Improvement
 
 <!--
 If you have an idea to improve the documentation please suggest it here
