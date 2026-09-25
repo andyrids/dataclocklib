@@ -56,6 +56,7 @@ Changelog = "https://github.com/andyrids/dataclocklib/blob/main/CHANGELOG.md"
 [[tool.uv.index]]
 name = "gitlab"
 url = "https://gitlab.com/api/v4/projects/82928123/packages/pypi/simple"
+explicit = true
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
@@ -72,27 +73,25 @@ tag_message = "chore: tag version update {current_version} -> {new_version}."
 allow_dirty = false
 message = "chore: version update {current_version} -> {new_version}."
 
-# [[tool.bumpversion.files]]
-# filename = "src/dataclocklib/__init__.py"
-
-[[tool.bumpversion.files]]
-filename = "pyproject.toml"
-search = 'version = "{current_version}"'
-replace = 'version = "{new_version}"'
-
 [build-system]
-requires = ["setuptools>=77.0", "setuptools_scm[toml]", "wheel>=0.37.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
-[tool.setuptools_scm]
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
+version_scheme = "guess-next-dev"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dataclocklib"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/README.md", "/CHANGELOG.md"]
+
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
 
 [tool.uv.sources]
 pkgdx = { index = "gitlab" }
-# this section enables setuptools_scm
-# can use:
-# git tag -a v0.1.4 -m "chore: tag version update."
-# or:
-# bump-my-version bump patch"
-# git describe will indicate if setuptools_scm can identify your tag
-# update a tag to the current head
-# git tag v0.1.4 -f

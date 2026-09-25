@@ -2,75 +2,85 @@
 name: Documentation
 
 on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "docs/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "Justfile"
+      - ".github/workflows/docs.yml"
   push:
-    tags:
-      - "v*"
-  # Manual Build & Deployment Trigger
-  # ---------------------------------
-  # 1. Go to the "Actions" tab in your GitHub repository
-  # 2. Select the "Documentation" workflow
-  # 3. Click "Run workflow"
-  # 4. Select 'github-pages' environment
-  # 5. Click 'Run workflow'
+    tags: ["v*"]
+  # Manual build & deploy: Actions tab -> Documentation -> Run workflow
   workflow_dispatch:
-    inputs:
-      environment:
-        description: "Deployment environment"
-        type: environment
-        required: true
-        default: "github-pages"
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: true
+  group: docs-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  FORCE_COLOR: "1"
+  MPLBACKEND: Agg
+  # `uv run` below must not re-lock: behave like `--locked`
+  UV_LOCKED: "1"
 
 jobs:
-  build-docs:
-      name: Build Documentation
-      runs-on: ubuntu-latest
-
-      steps:
-        - uses: actions/checkout@v4
-
-        - name: Install uv
-          uses: astral-sh/setup-uv@v5
-          with:
-            version: "0.5.16"
-            enable-cache: true
-            cache-dependency-glob: "uv.lock"
-
-        - name: Install Python
-          uses: actions/setup-python@v5
-          with:
-            python-version-file: "pyproject.toml"
-
-        - name: Install Dependencies
-          run: uv sync --all-extras --no-dev
-
-        - name: Make HTML
-          run: |
-            cd docs
-            uv run make html
-        
-        - name: Upload HTML Artifact
-          uses: actions/upload-pages-artifact@v3
-          with:
-            path: docs/build/html
-
-  deploy-docs:
-    name: Deploy Documentation
-    needs: build-docs
+  build:
+    name: Build documentation
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ inputs.environment || 'github-pages' }}
-      url: ${{ steps.deployment.outputs.page_url }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # release/version in conf.py comes from the git tag
+          persist-credentials: false
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+          # no cache: this workflow deploys to Pages (avoid cache poisoning)
+          enable-cache: false
+
+      # Same command as the `just docs` recipe (warnings are errors)
+      - name: Sphinx HTML (just docs)
+        run: uv run --extra docs sphinx-build -W --keep-going -b html docs/source docs/build/html
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: docs/build/html
+
+      - name: Upload HTML preview (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: docs-html
+          path: docs/build/html
+          retention-days: 7
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

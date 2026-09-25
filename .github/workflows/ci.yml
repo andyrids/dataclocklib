@@ -3,35 +3,149 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main, develop]
   workflow_dispatch:
 
-jobs:
-  setup-uv:
-    name: Install uv, Hooks & Tests
-    runs-on: ubuntu-latest
+permissions:
+  contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  FORCE_COLOR: "1"
+  MPLBACKEND: Agg
+  PYTHONUTF8: "1"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  hooks:
+    name: Hooks (prek)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
+          python-version: "3.13"
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          cache-dependency-glob: uv.lock
 
-      - name: Install Python
-        uses: actions/setup-python@v5
+      - name: Cache prek environments
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          python-version-file: "pyproject.toml"
+          path: ~/.cache/prek
+          key: prek-${{ runner.os }}-${{ hashFiles('prek.toml') }}
 
-      - name: Install Dependencies
-        run: uv sync --all-extras --dev
+      - name: Install dependencies
+        run: uv sync --locked
 
       - name: Hooks (pkgdx standards)
-        run: uv run prek run --all-files
+        run: uv run --no-sync prek run --all-files --show-diff-on-failure
 
-      - name: Unit Tests
-        run: uv run pytest --mpl --cov-report term --cov=dataclocklib
+  test:
+    name: Test (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv + Python ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Unit + image comparison tests
+        run: >-
+          uv run --no-sync pytest --mpl
+          --mpl-results-path=mpl-results
+          --mpl-generate-summary=html,json
+          --cov=dataclocklib --cov-report=term --cov-report=xml
+
+      - name: Upload image comparison results
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mpl-results-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: mpl-results/
+          retention-days: 7
+
+      - name: Upload coverage report
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 14
+
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # hatch-vcs needs the git tags for the version
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Build sdist + wheel
+        run: uv build
+
+      - name: Check metadata
+        run: uvx twine check --strict dist/*
+
+      - name: Smoke test wheel
+        run: >-
+          uv run --isolated --no-project --with dist/*.whl python -c
+          "import dataclocklib, importlib.resources as r;
+          cfg = r.files('dataclocklib') / 'config';
+          assert (cfg / 'dataclock.ini').is_file() and (cfg / 'linechart.ini').is_file();
+          print(dataclocklib.__version__)"
+
+      - name: Upload dist
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  ci-ok:
+    # Single required status check for branch protection (matrix names change).
+    name: CI OK
+    if: always()
+    needs: [hooks, test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        env:
+          FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: test "$FAILED" = "false"

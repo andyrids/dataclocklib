@@ -164,9 +164,24 @@ Activate the virtual environment:
 . .venv/bin/activate
 ```
 
-### Sphinx documentation
+Common development tasks are [just](https://github.com/casey/just) recipes (run `just` to list them):
 
 ```bash
-cd docs
-make html
+just setup      # uv sync --all-extras, install the prek git hooks, update .secrets.baseline
+just coverage   # run the tests with a coverage report
+```
+
+### Sphinx documentation
+
+Build the HTML documentation into `docs/build/html` (warnings are treated as errors):
+
+```bash
+just docs
+```
+
+Serve it locally with live reload, or remove the build output:
+
+```bash
+just docs-serve
+just docs-clean
 ```

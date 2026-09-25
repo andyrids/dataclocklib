@@ -1,7 +1,7 @@
 """__init__ for dataclocklib package.
 
 NOTE:  We generate __version__ from the 'dataclocklib' package information,
-facilitated by 'setuptools_scm'.
+facilitated by 'hatch-vcs'.
 
 License:
     SPDX-License-Identifier: GPL-3.0-or-later

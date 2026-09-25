@@ -51,6 +51,7 @@ coverage.xml
 .pytest_cache/
 cover/
 mpl_results/
+mpl-results/
 
 # Translations
 *.mo
@@ -71,6 +72,8 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/build/
+docs/source/jupyter_execute/
 
 # PyBuilder
 .pybuilder/

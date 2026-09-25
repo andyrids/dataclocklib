@@ -18,8 +18,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `publish.yml` workflow: PyPI trusted publishing (OIDC) on `v*` tags, via a `pypi`
+  environment, after checking that the tag matches the built version.
+- `just docs`, `just docs-serve` and `just docs-clean` recipes.
+- `.gitattributes` normalising line endings to LF (binary images and data files untouched).
+
 ### Changed
 
+- Build backend is now hatchling + hatch-vcs (was setuptools + setuptools_scm); the version
+  still comes from the git tag. The sdist only contains the package source, README,
+  CHANGELOG and licence files.
+- Documentation is built with `just docs` (`sphinx-build -W`, warnings are errors), locally
+  and in CI; the API reference uses fully-qualified `dataclocklib.*` names.
+- CI tests on Windows and Linux with Python 3.11, 3.13 and 3.14, installs from `uv.lock`,
+  builds and checks the distributions, and pins actions to commit SHAs.
+- The GitLab package index is `explicit`: only `pkgdx` is resolved from it, every other
+  package comes from PyPI.
+- `just setup` installs all extras, and `just secrets-baseline` updates `.secrets.baseline`
+  in place instead of regenerating it.
 - Licence metadata uses the SPDX expression `GPL-3.0-or-later` (PEP 639); `LICENSE` and
   `COPYRIGHT` are included in distributions.
 - Module docstrings carry an SPDX licence identifier instead of the full GPL notice.
@@ -34,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Redundant Ruff and Pyright configuration from `pyproject.toml`.
+- `docs/Makefile`, `docs/make.bat`, `readthedocs.yml` and the unused `docs/Contributing.rst`.
+- The unused `[[tool.bumpversion.files]]` rule.
 
 ### Fixed
 
@@ -46,6 +66,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   52/53 are placed in week 1 and late-December days in ISO week 1 in week 52.
 - Rings are drawn in chronological order in every mode, regardless of input row order.
 - 'DAY_HOUR' mode documentation now states days 1 - 366 (previously 356).
+- Wheels built without git metadata (e.g. from a source archive) were missing the
+  `config/*.ini` files, so `dataclock()` failed at runtime.
+- API documentation referenced functions that no longer exist and omitted `line_chart`
+  and `add_wedge_labels`.
+- The documentation build no longer executes the notebooks (which installed packages and
+  downloaded data over the network); the stored notebook outputs are rendered instead.
 
 ## [0.2.0] - 2025-01-23
 

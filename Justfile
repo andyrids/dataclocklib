@@ -10,16 +10,16 @@ set dotenv-load := true
 @_:
     just --list
 
-[doc("Generate a `detect-secrets` baseline for the repository")]
+[doc("Update the `detect-secrets` baseline in place (keeps audit results)")]
 [group("DEV")]
 secrets-baseline:
-    echo "NOTE: Run this once after initial setup & re-run after intentionally adding secrets to the codebase (e.g. test fixtures)."
-    uv run detect-secrets scan --exclude-files "(\.venv|\.secrets\.baseline|.*\.lock)" > .secrets.baseline
+    @echo NOTE: re-run after intentionally adding secrets, e.g. test fixtures, then audit new results.
+    uv run detect-secrets scan --baseline .secrets.baseline
 
 [doc("Setup development environment")]
 [group("DEV")]
 setup: && secrets-baseline
-    uv sync
+    uv sync --all-extras
     uv run -m prek install
 
 [doc("Create `coverage` report")]
@@ -39,3 +39,18 @@ git-prune:
 [group("DEV")]
 symlink-agents:
     @uv run python -c "import pathlib; p=pathlib.Path('CLAUDE.md'); p.unlink(missing_ok=True); p.symlink_to('AGENTS.md')"
+
+[doc("Build Sphinx HTML documentation (warnings treated as errors)")]
+[group("DOCS")]
+docs:
+    uv run --extra docs sphinx-build -W --keep-going -b html docs/source docs/build/html
+
+[doc("Serve documentation locally with live-reload on changes")]
+[group("DOCS")]
+docs-serve:
+    uv run --extra docs sphinx-autobuild docs/source docs/build/html --open-browser
+
+[doc("Remove built documentation artifacts")]
+[group("DOCS")]
+docs-clean:
+    @uv run python -c "import shutil; shutil.rmtree('docs/build', ignore_errors=True)"
