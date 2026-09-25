@@ -24,7 +24,7 @@ The table below details the currently supported chart modes and the correspondin
 | YEAR_WEEK  | Years            | Weeks            | Calendar years / weeks 1 - 52.    |
 | WEEK_DAY   | Weeks            | Days of the week | ISO weeks / Monday - Sunday.      |
 | DOW_HOUR   | Days of the week | Hour of day      | Monday - Sunday / 24 hours.       |
-| DAY_HOUR   | Days             | Hour of day      | Days 1 - 356 / 24 hours.          |
+| DAY_HOUR   | Days             | Hour of day      | Days 1 - 366 / 24 hours.          |
 
 The full documentation can be viewed on the project [GitHub Page](https://andyrids.github.io/dataclocklib/).
 

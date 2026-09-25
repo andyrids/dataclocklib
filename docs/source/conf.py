@@ -1,23 +1,7 @@
 """Configuration file for the Sphinx documentation builder.
 
-Author: Andrew Ridyard.
-
-License: GNU General Public License v3 or later.
-
-Copyright (C): 2026.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+License:
+    SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 # Path setup
@@ -38,7 +22,7 @@ sys.path.insert(0, package_dir.as_posix())
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "dataclocklib"
-project_copyright = "2026, Andrew Ridyard"
+project_copyright = "2024-2026, Andrew Ridyard"
 author = "Andrew Ridyard"
 
 # The full version, including alpha/beta/rc tags

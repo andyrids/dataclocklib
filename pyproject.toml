@@ -4,7 +4,8 @@ description = "Dataclock charts using matplotlib."
 authors = [{name = "Andrew Ridyard", email = "developer.surface832@passmail.com"}]
 maintainers = [{name = "Andrew Ridyard", email = "developer.surface832@passmail.com"}]
 dynamic = ["version"]
-license = { file = "LICENSE" }
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE", "COPYRIGHT"]
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.11"
 classifiers=[
@@ -13,7 +14,6 @@ classifiers=[
     "Framework :: Matplotlib",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
@@ -81,16 +81,8 @@ search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
 
 [build-system]
-requires = ["setuptools>=64.0", "setuptools_scm[toml]", "wheel>=0.37.0"]
+requires = ["setuptools>=77.0", "setuptools_scm[toml]", "wheel>=0.37.0"]
 build-backend = "setuptools.build_meta"
-
-[tool.distutils.metadata]
-metadata_version = "2.4"
-
-# license-file introduced in metadata version 2.4, not 2.2 error
-# https://github.com/pypa/setuptools/issues/4759
-[tool.setuptools]
-license-files = []
 
 [tool.setuptools_scm]
 

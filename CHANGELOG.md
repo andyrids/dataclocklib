@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Licence metadata uses the SPDX expression `GPL-3.0-or-later` (PEP 639); `LICENSE` and
+  `COPYRIGHT` are included in distributions.
+- Module docstrings carry an SPDX licence identifier instead of the full GPL notice.
 - Minimum supported versions are now Python 3.11 and pandas 3.0.
 - Lint, format, typing, markdown & secrets checks use pkgdx standards via prek hooks.
 - CI runs the prek hooks instead of standalone Ruff steps.
@@ -41,7 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   merged into the wrong week (e.g. 2013-12-30 is now in ring 201401, not 201301).
 - 'YEAR_WEEK' weeks no longer cross calendar years; early-January days in ISO week
   52/53 are placed in week 1 and late-December days in ISO week 1 in week 52.
-- 'YEAR_WEEK' & 'WEEK_DAY' rings are drawn in chronological order.
+- Rings are drawn in chronological order in every mode, regardless of input row order.
+- 'DAY_HOUR' mode documentation now states days 1 - 366 (previously 356).
 
 ## [0.2.0] - 2025-01-23
 

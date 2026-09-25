@@ -1,24 +1,5 @@
 """Unit tests module.
 
-Author: Andrew Ridyard.
-
-License: GNU General Public License v3 or later.
-
-Copyright (C): 2025.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 Functions:
     test_year_month_default: Test default YEAR_MONTH mode chart generation.
     test_week_day_default: Test default WEEK_DAY mode chart generation.
@@ -27,6 +8,7 @@ Functions:
     test_chart_annotation: Test chart annotation text.
     test_chart_aggregation: Test chart aggregation calculations.
     test_week_boundaries: Test week mode bins around year boundaries.
+    test_ring_order: Test rings are chronological in every mode.
     test_week_ring_order: Test week mode rings are chronological.
     test_line_chart_aggregation: Test line chart aggregation calculations.
     test_non_ns_datetime_units: Test non-nanosecond datetime64 columns.
@@ -36,6 +18,9 @@ Functions:
     test_no_deprecation_warnings: Test no deprecation warnings are raised.
     test_aggregation_dtypes: Test aggregation result dtypes.
     test_wedge_labels: Test wedge label text for each mode.
+
+License:
+    SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 import calendar
@@ -309,6 +294,26 @@ def test_week_boundaries(
     for mode, expected in (("YEAR_WEEK", year_week), ("WEEK_DAY", week_day)):
         result = assign_temporal_columns(data, "Date_Time", mode)
         assert (result["ring"].item(), result["wedge"].item()) == expected
+
+
+@pytest.mark.parametrize("mode", VALID_MODES)
+def test_ring_order(mode: str) -> None:
+    """Test rings are chronological for shuffled input in every mode."""
+    # spans two year boundaries, so every mode except DOW_HOUR has
+    # multiple rings to order
+    data = traffic_data.query(
+        "Date_Time.ge('2012-12-20') & Date_Time.le('2014-01-10 23:59:59')"
+    ).sample(frac=1, random_state=0)
+    result = aggregate_temporal_columns(
+        assign_temporal_columns(data, "Date_Time", mode),
+        "Date_Time",
+        "count",
+        mode,
+    )
+    rings = list(result["ring"].unique())
+    if mode != "DOW_HOUR":
+        assert len(rings) > 1
+    assert rings == sorted(rings)
 
 
 def test_week_ring_order() -> None:

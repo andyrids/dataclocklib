@@ -76,7 +76,7 @@ The table below details the currently supported chart modes and the correspondin
 +------------+------------------+------------------+-----------------------------------------------+
 | DOW_HOUR   | Days of the week | Hour of day      | Monday - Sunday / 24 hours.                   |
 +------------+------------------+------------------+-----------------------------------------------+
-| DAY_HOUR   | Days             | Hour of day      | Days 1 - 356 / 24 hours.                      |
+| DAY_HOUR   | Days             | Hour of day      | Days 1 - 366 / 24 hours.                      |
 +------------+------------------+------------------+-----------------------------------------------+
 
 .. code-block::

@@ -1,24 +1,5 @@
 """Utility function module for chart creation.
 
-Author: Andrew Ridyard.
-
-License: GNU General Public License v3 or later.
-
-Copyright (C): 2025.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 Functions:
     add_colorbar: Add a colorbar to a figure, using the provided axis.
     add_text: Create annotation text on an Axes.
@@ -29,6 +10,9 @@ Functions:
 
 Constants:
     VALID_STYLES: Valid font styles.
+
+License:
+    SPDX-License-Identifier: GPL-3.0-or-later
 """
 
 import math
@@ -209,17 +193,15 @@ def aggregate_temporal_columns(
     if not set(columns).issubset(data.columns):
         raise ValueError(f"Expected DataFrame columns: {columns}")
 
-    unique_rings: Iterable[int] = data["ring"].unique()
+    # rings are drawn in chronological order
+    unique_rings: Iterable[int] = np.sort(data["ring"].unique())
     unique_wedges: Iterable[int]
     match mode:
         case "YEAR_MONTH":
             unique_wedges = range(1, 13)
-        # week modes are drawn in chronological ring order
         case "YEAR_WEEK":
-            unique_rings = np.sort(data["ring"].unique())
             unique_wedges = range(1, 53)
         case "WEEK_DAY":
-            unique_rings = np.sort(data["ring"].unique())
             unique_wedges = range(0, 7)
         case "DOW_HOUR":
             unique_rings = range(0, 7)
@@ -256,7 +238,8 @@ def assign_temporal_columns(
     and 'wedge' columns.
 
     'YEAR_WEEK' rings are calendar years, with ISO week numbers clamped so
-    that weeks never cross a calendar year boundary. 'WEEK_DAY' rings are ISO
+    that weeks never cross a calendar year boundary; week 1 therefore spans
+    4 - 10 days and week 52 spans 5 - 12 days. 'WEEK_DAY' rings are ISO
     year-weeks (YYYYWW), so a calendar-year filter can include a partial ISO
     week from a neighbouring year (e.g. 2010-01-01 is in ring 200953).
 
@@ -295,7 +278,7 @@ def assign_temporal_columns(
         # days 1 - 7 (Monday - Sunday) | 00:00 - 23:00
         case "DOW_HOUR":
             ring, wedge = dates.day_of_week, dates.hour
-        # days 1 - 365 | 00:00 - 23:00
+        # days 1 - 366 | 00:00 - 23:00
         case "DAY_HOUR":
             ring, wedge = dates.strftime("%Y%j"), dates.hour
         case _:
