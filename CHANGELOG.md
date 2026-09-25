@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `publish.yml` workflow: PyPI trusted publishing (OIDC) on `v*` tags, via a `pypi`
   environment, after checking that the tag matches the built version.
+- Release and tagged docs builds pin the version to the git tag and refuse to build from a
+  dirty working tree.
 - `just docs`, `just docs-serve` and `just docs-clean` recipes.
 - `.gitattributes` normalising line endings to LF (binary images and data files untouched).
 

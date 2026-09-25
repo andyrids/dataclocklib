@@ -20,6 +20,7 @@ classifiers=[
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 keywords = ["matplotlib", "dataclock", "visualisation", "analysis"]
@@ -81,6 +82,8 @@ build-backend = "hatchling.build"
 source = "vcs"
 
 [tool.hatch.version.raw-options]
+# lets SETUPTOOLS_SCM_PRETEND_VERSION_FOR_DATACLOCKLIB work under hatch-vcs
+dist_name = "dataclocklib"
 local_scheme = "no-local-version"
 version_scheme = "guess-next-dev"
 

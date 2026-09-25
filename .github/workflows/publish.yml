@@ -29,12 +29,24 @@ jobs:
           python-version: "3.13"
           enable-cache: false # never restore a cache into a release build
 
+      # A dirty tree means something changed the sources; fail rather than
+      # publish files that differ from the tagged commit
+      - name: Check working tree is clean
+        run: |
+          git status --porcelain
+          test -z "$(git status --porcelain)"
+
+      # Pin the version to the tag, independent of git describe state
+      - name: Pin version to tag
+        run: echo "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_DATACLOCKLIB=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
       - name: Build sdist + wheel
         run: uv build
 
       - name: Check metadata
         run: uvx twine check --strict dist/*
 
+      # Catches tags that are not normalised PEP 440 versions (e.g. v1.0-rc1)
       - name: Verify tag matches built version
         env:
           TAG: ${{ github.ref_name }}
