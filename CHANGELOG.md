@@ -16,7 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > - `Fixed` for any bug fixes.
 > - `Security` in case of vulnerabilities.
 
-## [Unreleased]
+## [0.3.0] - 2026-09-26
+
+### Breaking changes
+
+- Python 3.10 and pandas below 3.0 are no longer supported; pin `dataclocklib<0.3` to stay on
+  those versions.
+- `assign_temporal_columns` raises `ModeError` (a `ValueError`) instead of `KeyError` for an
+  unexpected mode value; catch `ValueError` or `ModeError`.
+- A non-numeric `agg_column` (e.g. string, datetime or object dtype) with an aggregation other
+  than `'count'` now raises `AggregationColumnError`; bool columns are still accepted.
+- `'YEAR_WEEK'` and `'WEEK_DAY'` output differs at year boundaries (see Fixed), and the
+  DataFrames returned by `dataclock`, `line_chart` and `aggregate_temporal_columns` are sorted
+  in chronological ring order; select rows by label (`.loc`), not position (`.iloc`).
 
 ### Added
 
@@ -26,6 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dirty working tree.
 - `just docs`, `just docs-serve` and `just docs-clean` recipes.
 - `.gitattributes` normalising line endings to LF (binary images and data files untouched).
+- `py.typed` marker, so type checkers recognise the package's inline type hints.
+- `add_colorbar` gains a trailing `vmin` keyword (default `1`), so the colour normalisation
+  range is configurable; existing positional callers are unaffected.
+- `dataclock` and `line_chart` now raise a clear `MissingDatetimeError` for `NaT` values in
+  `date_column`, and `AggregationColumnError` for a non-numeric `agg_column` or one named
+  `'ring'`/`'wedge'` (reserved names), each with a reason in the error message.
 
 ### Changed
 
@@ -46,10 +64,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minimum supported versions are now Python 3.11 and pandas 3.0.
 - Lint, format, typing, markdown & secrets checks use pkgdx standards via prek hooks.
 - CI runs the prek hooks instead of standalone Ruff steps.
-- Chart functions refactored into smaller private helpers; public API is unchanged.
+- Chart functions refactored into smaller private helpers; the module-level `charts.config`
+  object was removed along with them, so it is no longer part of the public API.
 - `MissingDatetimeError` message now states that a naive datetime64 dtype is expected.
 - `assign_temporal_columns` now raises `ModeError` (a `ValueError`) for an unexpected
   mode value; it previously raised a `KeyError` from the underlying `astype` call.
+- `dataclock`'s docstring now documents that `fig_kw` always overrides `figsize` and
+  `constrained_layout`; other keys, such as `dpi`, are passed through to `pyplot.subplots`.
 
 ### Removed
 
@@ -59,14 +80,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Colour scale: `'count'` aggregations keep the 1..max scale, while every other aggregation
+  now scales from the data minimum to the data maximum, so values below 1 are no longer
+  clipped to the same colour. Empty bins stay white; a real zero or negative value is coloured.
+- Colorbar ticks from `add_colorbar` are unique, and integer ticks are only used for integral
+  data, so a float sum's top tick now equals the true maximum.
+- Chart title, subtitle and period font sizes are no longer scaled twice, so large charts
+  (e.g. `'WEEK_DAY'` over multiple years) render text at the intended size and no longer
+  overlap or run outside the figure.
 - Naive datetime64 columns with non-nanosecond resolution (us, ms, s) are now accepted.
 - Matplotlib `Colormap.set_under` pending deprecation warning.
 - Test data paths no longer depend on the pytest working directory.
 - 'WEEK_DAY' rings use the ISO year, so days at the turn of a year are no longer
-  merged into the wrong week (e.g. 2013-12-30 is now in ring 201401, not 201301).
+  merged into the wrong week (e.g. 2013-12-30 is now in ring 201401, not 201301). A
+  calendar-year slice can therefore start or end with a partial ISO-week ring, whose days
+  outside the data are empty.
 - 'YEAR_WEEK' weeks no longer cross calendar years; early-January days in ISO week
   52/53 are placed in week 1 and late-December days in ISO week 1 in week 52.
-- Rings are drawn in chronological order in every mode, regardless of input row order.
+- Rings are drawn in chronological order in every mode, regardless of input row order; the
+  DataFrame returned by `aggregate_temporal_columns` is sorted in the same ring order.
 - 'DAY_HOUR' mode documentation now states days 1 - 366 (previously 356).
 - Wheels built without git metadata (e.g. from a source archive) were missing the
   `config/*.ini` files, so `dataclock()` failed at runtime.

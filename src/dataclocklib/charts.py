@@ -28,7 +28,11 @@ import numpy as np
 from matplotlib.axes import Axes  # noqa: TC002
 from matplotlib.figure import Figure  # noqa: TC002
 from pandas import DataFrame  # noqa: TC002
-from pandas.api.types import is_datetime64_dtype
+from pandas.api.types import (
+    is_datetime64_dtype,
+    is_integer_dtype,
+    is_numeric_dtype,
+)
 
 from dataclocklib.exceptions import (
     AggregationColumnError,
@@ -39,6 +43,7 @@ from dataclocklib.exceptions import (
 )
 from dataclocklib.typing import Aggregation, CmapNames, Mode
 from dataclocklib.utility import (
+    _aggregate_temporal_columns,
     add_colorbar,
     add_text,
     add_wedge_labels,
@@ -117,14 +122,19 @@ def dataclock(
         chart_subtitle (str, optional): Chart subtitle.
         chart_period (str, optional): Chart reporting period.
         chart_source (str, optional): Chart data source.
-        **fig_kw (Any): Chart figure kwargs passed to pyplot.subplots.
+        **fig_kw (Any): Chart figure kwargs passed to pyplot.subplots;
+            'figsize' & 'constrained_layout' are always overridden, while
+            'dpi' (default 100) & any other kwargs are passed through.
 
     Raises:
-        AggregationColumnError: Expected aggregation column value.
+        AggregationColumnError: Missing agg_column for a non-count
+            aggregation, a non-numeric agg_column for a non-count
+            aggregation, or an agg_column named 'ring' or 'wedge'.
         AggregationFunctionError: Unexpected aggregation function value.
         EmptyDataFrameError: Unexpected empty DataFrame.
         KeyError: date_column or agg_column not in DataFrame.
-        MissingDatetimeError: Unexpected data[date_column] dtype.
+        MissingDatetimeError: Unexpected data[date_column] dtype, or
+            data[date_column] contains NaT values.
         ModeError: Unexpected mode value is passed.
 
     Returns:
@@ -135,7 +145,9 @@ def dataclock(
 
     data = assign_temporal_columns(data, date_column, mode)
     agg_column = agg_column or date_column
-    data_graph = aggregate_temporal_columns(data, agg_column, agg, mode)
+    # empty temporal bins are NaN, to be coloured white (not scaled as 0)
+    data_unfilled = _aggregate_temporal_columns(data, agg_column, agg, mode)
+    data_graph = data_unfilled.fillna(0)
     data_graph[agg] = _as_int_if_integral(data_graph[agg])
 
     # calculate optimal figure dimensions (0.85 per wedge)
@@ -176,11 +188,14 @@ def dataclock(
 
     _style_polar_axes(ax, theta, max_radius, grid_color, spine_color)
 
-    values_dtype = (np.float64, np.int64)[agg in ("count", "sum")]
+    # integer colorbar ticks only when every aggregation value is integral
+    values_dtype = (np.float64, np.int64)[is_integer_dtype(data_graph[agg])]
+    values = data_unfilled[agg].to_numpy(dtype=np.float64, na_value=np.nan)
+    vmin, vmax = _colour_limits(values, agg)
     # we can use colorbar.cmap(colorbar.norm(<aggregation value>)),
     # to return the RGB values to represent each aggregation result
     colorbar = add_colorbar(
-        ax, fig, cmap_name, cmap_reverse, data_graph[agg].max(), values_dtype
+        ax, fig, cmap_name, cmap_reverse, vmax, values_dtype, vmin=vmin
     )
 
     figure_width, _ = figure_size
@@ -200,7 +215,7 @@ def dataclock(
         _wedge_labels(mode, data_graph["wedge"].unique()),
     )
 
-    _draw_rings(ax, data_graph, agg, colorbar, theta, width)
+    _draw_rings(ax, data_graph["ring"], values, colorbar, theta, width)
 
     # generate default text for missing chart_title & chart_subtitle values
     if default_text:
@@ -234,7 +249,7 @@ def dataclock(
             x=0.1,
             y=text_y - (i * text_spacing),
             text=text,
-            fontsize=fontsize * font_scale_factor,
+            fontsize=fontsize,
             weight=weight,
             alpha=0.8,
             transform=fig.transFigure,
@@ -298,11 +313,14 @@ def line_chart(
         **fig_kw (Any): Chart figure kwargs (currently unused).
 
     Raises:
-        AggregationColumnError: Expected aggregation column value.
+        AggregationColumnError: Missing agg_column for a non-count
+            aggregation, a non-numeric agg_column for a non-count
+            aggregation, or an agg_column named 'ring' or 'wedge'.
         AggregationFunctionError: Unexpected aggregation function value.
         EmptyDataFrameError: Unexpected empty DataFrame.
         KeyError: date_column or agg_column not in DataFrame.
-        MissingDatetimeError: Unexpected data[date_column] dtype.
+        MissingDatetimeError: Unexpected data[date_column] dtype, or
+            data[date_column] contains NaT values.
         ModeError: Unexpected mode value is passed.
 
     Returns:
@@ -436,6 +454,32 @@ def _as_int_if_integral(values: Series) -> Series:
     return values
 
 
+def _colour_limits(
+    values: NDArray[np.float64], agg: Aggregation
+) -> tuple[float, float]:
+    """Calculate the colour scale limits for the aggregation values.
+
+    Count charts scale from 1, with empty bins below the scale. Every other
+    aggregation scales from the minimum value, so 0 & negative values are
+    coloured. NaN values (empty bins) are ignored.
+
+    Args:
+        values (NDArray[np.float64]): Aggregation values; NaN for empty bins.
+        agg (Aggregation): Aggregation function name.
+
+    Returns:
+        A tuple containing the colour scale minimum and maximum values.
+    """
+    finite = values[~np.isnan(values)]
+    if finite.size == 0:
+        # no aggregation values (e.g. an all-NaN agg_column)
+        return 1.0, 1.0
+
+    vmin = 1.0 if agg == "count" else float(finite.min())
+    # all counts 0 (e.g. an all-NaN agg_column) collapse to a single value
+    return vmin, max(float(finite.max()), vmin)
+
+
 def _default_text(
     ini: pathlib.Path,
     mode: Mode,
@@ -530,8 +574,8 @@ def _style_polar_axes(
 
 def _draw_rings(
     ax: Axes,
-    data_graph: DataFrame,
-    agg: Aggregation,
+    rings: Series,
+    values: NDArray[np.float64],
     colorbar: Colorbar,
     theta: NDArray[np.float64],
     width: float,
@@ -540,8 +584,9 @@ def _draw_rings(
 
     Args:
         ax (Axes): Chart polar Axes.
-        data_graph (DataFrame): Aggregated 'ring', 'wedge' & agg columns.
-        agg (Aggregation): Aggregation function (value column) name.
+        rings (Series): Ring value of each aggregation value.
+        values (NDArray[np.float64]): Aggregation values; NaN values (empty
+            bins) are coloured white by the colorbar cmap.
         colorbar (Colorbar): Colorbar used to map values to colours.
         theta (NDArray[np.float64]): Angles (radians) for each wedge.
         width (float): Width of each wedge (radians).
@@ -552,11 +597,11 @@ def _draw_rings(
     # ring position starts from 1, creating a donut shape
     start_position = 1
 
-    for ring_position, ring in enumerate(data_graph["ring"].unique()):
-        view = data_graph.loc[data_graph["ring"] == ring]
+    for ring_position, ring in enumerate(rings.unique()):
+        ring_values = values[(rings == ring).to_numpy()]
 
         graduated_colors = tuple(
-            colorbar.cmap(colorbar.norm(i)) for i in view[agg]
+            colorbar.cmap(colorbar.norm(i)) for i in ring_values
         )
 
         ax.bar(
@@ -597,11 +642,14 @@ def _validate_chart_parameters(
             'YEAR_WEEK', 'WEEK_DAY', 'DOW_HOUR' & 'DAY_HOUR'.
 
     Raises:
-        AggregationColumnError: Expected aggregation column value.
+        AggregationColumnError: Missing agg_column for a non-count
+            aggregation, a non-numeric agg_column for a non-count
+            aggregation, or an agg_column named 'ring' or 'wedge'.
         AggregationFunctionError: Unexpected aggregation function value.
         EmptyDataFrameError: Unexpected empty DataFrame.
         KeyError: Column not in DataFrame.
-        MissingDatetimeError: date_column is not a naive datetime64 dtype.
+        MissingDatetimeError: date_column is not a naive datetime64 dtype or
+            contains NaT values.
         ModeError: Unexpected mode value is passed.
 
     Returns:
@@ -616,9 +664,47 @@ def _validate_chart_parameters(
     # naive datetime64 of any resolution; tz-aware dtypes are rejected
     if not is_datetime64_dtype(data[date_column]):
         raise MissingDatetimeError(date_column)
+    if n_missing := data[date_column].isna().sum():
+        reason = (
+            f"{n_missing} NaT value(s); drop them first, e.g. "
+            f"data.dropna(subset=[{date_column!r}])"
+        )
+        raise MissingDatetimeError(date_column, reason=reason)
     if mode not in VALID_MODES:
         raise ModeError(mode, VALID_MODES)
     if agg not in VALID_AGGREGATIONS:
         raise AggregationFunctionError(agg, VALID_AGGREGATIONS)
-    if agg_column is None and agg != "count":
-        raise AggregationColumnError(agg)
+    _validate_agg_column(data, agg_column, agg)
+
+
+def _validate_agg_column(
+    data: DataFrame, agg_column: str | None, agg: Aggregation
+) -> None:
+    """Validate the aggregation column for the aggregation function.
+
+    Args:
+        data (DataFrame): DataFrame containing data to visualise.
+        agg_column (str, optional): DataFrame Column to aggregate.
+        agg (Aggregation): Aggregation function name.
+
+    Raises:
+        AggregationColumnError: Missing agg_column for a non-count
+            aggregation, a non-numeric agg_column for a non-count
+            aggregation, or an agg_column named 'ring' or 'wedge'.
+
+    Returns:
+        None
+    """
+    if agg_column is None:
+        if agg != "count":
+            raise AggregationColumnError(agg)
+        return
+    # 'ring' & 'wedge' columns are overwritten by assign_temporal_columns
+    if agg_column in ("ring", "wedge"):
+        reason = f"{agg_column!r} is a reserved column name; rename it"
+        raise AggregationColumnError(agg, reason=reason)
+    column = data[agg_column]
+    # bool is numeric: sum counts True values & mean is their proportion
+    if agg != "count" and not is_numeric_dtype(column):
+        reason = f"{agg_column!r} ({column.dtype}) is not numeric"
+        raise AggregationColumnError(agg, reason=reason)

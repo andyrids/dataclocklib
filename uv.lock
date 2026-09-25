@@ -834,7 +834,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "matplotlib" },
+    { name = "matplotlib", specifier = ">=3.10" },
     { name = "myst-nb", marker = "extra == 'docs'", specifier = ">=1.1.2" },
     { name = "pandas", extras = ["parquet"], specifier = ">=3.0" },
     { name = "pypalettes", specifier = ">=0.1.5" },

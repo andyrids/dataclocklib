@@ -10,7 +10,7 @@ readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.11"
 classifiers=[
     # 3 - Alpha | 4 - Beta | 5 - Production/Stable
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Framework :: Matplotlib",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
@@ -25,7 +25,7 @@ classifiers=[
 ]
 keywords = ["matplotlib", "dataclock", "visualisation", "analysis"]
 dependencies = [
-    "matplotlib",
+    "matplotlib>=3.10",
     "pandas[parquet]>=3.0",
     "pypalettes>=0.1.5",
 ]

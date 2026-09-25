@@ -15,9 +15,16 @@ Functions:
     test_parsed_string_datetimes: Test datetimes parsed from strings.
     test_tz_aware_datetime_raises: Test tz-aware datetime rejection.
     test_validation_errors: Test chart parameter validation errors.
+    test_validation_error_messages: Test validation error message reasons.
     test_no_deprecation_warnings: Test no deprecation warnings are raised.
     test_aggregation_dtypes: Test aggregation result dtypes.
     test_wedge_labels: Test wedge label text for each mode.
+    test_colour_scale: Test the colour scale for non-count aggregations.
+    test_equal_values_colour_scale: Test a colour scale of equal values.
+    test_count_colour_scale: Test the count colour scale starts from 1.
+    test_float_sum_ticks: Test float sum colorbar ticks end at the maximum.
+    test_title_font_scaling: Test title text scaling on a large figure.
+    test_aggregate_zero_filled: Test aggregate_temporal_columns zero fills.
 
 License:
     SPDX-License-Identifier: GPL-3.0-or-later
@@ -30,6 +37,7 @@ import warnings
 import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
+from matplotlib.colors import to_rgba
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
@@ -59,6 +67,16 @@ traffic_data = pd.read_parquet(data_file.as_posix())
 subset_data = traffic_data.query(
     "Date_Time.ge('2013-12-01') & Date_Time.le('2013-12-14 23:59:59')"
 )
+
+# subset with 3 missing (NaT) datetimes
+nat_data = subset_data.copy()
+nat_data.iloc[:3, nat_data.columns.get_loc("Date_Time")] = pd.NaT
+
+# three consecutive hours on a Monday; DOW_HOUR ring 0, wedges 0 - 2
+three_hours = pd.date_range("2024-01-01", periods=3, freq="h")
+
+# empty temporal bins are drawn white, at the wedge bar alpha
+white = to_rgba("w", 0.8)
 
 mpl_kwargs = {"baseline_dir": "plotting/baseline", "tolerance": 35}
 
@@ -408,6 +426,16 @@ def test_tz_aware_datetime_raises() -> None:
         ({"mode": "BAD_MODE"}, ModeError),
         ({"agg": "bad_agg"}, AggregationFunctionError),
         ({"agg": "sum"}, AggregationColumnError),
+        ({"data": nat_data}, MissingDatetimeError),
+        (
+            {"agg_column": "Accident_Severity_Label", "agg": "sum"},
+            AggregationColumnError,
+        ),
+        ({"agg_column": "Date_Time", "agg": "max"}, AggregationColumnError),
+        (
+            {"data": subset_data.assign(ring=1), "agg_column": "ring"},
+            AggregationColumnError,
+        ),
     ],
 )
 def test_validation_errors(
@@ -429,6 +457,47 @@ def test_validation_errors(
             chart(**parameters)  # type: ignore[arg-type]
         if exception is not KeyError:
             assert isinstance(exc_info.value, ValueError)
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "exception", "match"),
+    [
+        ({"data": nat_data}, MissingDatetimeError, r"3 NaT .*dropna"),
+        (
+            {"agg_column": "Accident_Severity_Label", "agg": "mean"},
+            AggregationColumnError,
+            "not numeric",
+        ),
+        (
+            {
+                "data": subset_data.assign(wedge=1.0),
+                "agg_column": "wedge",
+                "agg": "sum",
+            },
+            AggregationColumnError,
+            "reserved",
+        ),
+        ({"agg": "sum"}, AggregationColumnError, "Expected agg_column"),
+    ],
+)
+def test_validation_error_messages(
+    kwargs: dict[str, object], exception: type[Exception], match: str
+) -> None:
+    """Test chart parameter validation error messages give the reason.
+
+    Args:
+        kwargs: Chart function keyword arguments to override.
+        exception: Expected exception class.
+        match: Regular expression expected in the error message.
+    """
+    parameters: dict[str, object] = {
+        "data": subset_data,
+        "date_column": "Date_Time",
+    } | kwargs
+
+    for chart in (dataclock, line_chart):
+        with pytest.raises(exception, match=match):
+            chart(**parameters)  # type: ignore[arg-type]
 
 
 def test_no_deprecation_warnings() -> None:
@@ -477,3 +546,187 @@ def test_wedge_labels() -> None:
     assert _wedge_labels("YEAR_WEEK", range(1, 53)) == tuple(
         str(x) for x in range(1, 53)
     )
+
+
+@pytest.mark.parametrize(
+    ("values", "agg"),
+    [
+        ([0.1, 0.5, 0.9], "mean"),
+        ([0.0, 0.25, 0.75], "mean"),
+        ([-5, 0, 5], "sum"),
+        ([-3.5, -2.0, -0.5], "min"),
+    ],
+)
+def test_colour_scale(values: list[float], agg: str) -> None:
+    """Test the colour scale spans the data minimum to maximum.
+
+    Values below 1, zero & negative values are coloured, while empty
+    temporal bins are white.
+
+    Args:
+        values: Aggregation values for three consecutive hours.
+        agg: Aggregation function name.
+    """
+    data = pd.DataFrame({"Date_Time": three_hours, "Value": values})
+    chart_data, fig, ax = dataclock(
+        data,
+        "Date_Time",
+        "Value",
+        agg,  # type: ignore[arg-type]
+        mode="DOW_HOUR",
+    )
+    colorbar_ax = fig.axes[1]
+    ticks = list(colorbar_ax.get_yticks())
+    colours = [bar.get_facecolor() for bar in ax.patches]
+    plt.close(fig)
+
+    assert colorbar_ax.get_ylim() == (min(values), max(values))
+    assert ticks == sorted(set(ticks))
+    # three distinct, non-white colours for the three populated bins
+    assert len(set(colours[:3])) == 3
+    assert white not in colours[:3]
+    assert set(colours[3:]) == {white}
+    # the returned aggregation values are still zero filled
+    assert chart_data[agg].notna().all()
+    assert chart_data[agg].iloc[3:].eq(0).all()
+
+
+@pytest.mark.parametrize(
+    ("values", "agg"), [([2, 2, 2], "mean"), ([0, 0, 0], "sum")]
+)
+def test_equal_values_colour_scale(values: list[float], agg: str) -> None:
+    """Test a colour scale of equal values does not raise.
+
+    Args:
+        values: Equal aggregation values for three consecutive hours.
+        agg: Aggregation function name.
+    """
+    data = pd.DataFrame({"Date_Time": three_hours, "Value": values})
+    _, fig, ax = dataclock(
+        data,
+        "Date_Time",
+        "Value",
+        agg,  # type: ignore[arg-type]
+        mode="DOW_HOUR",
+    )
+    ticks = list(fig.axes[1].get_yticks())
+    colours = [bar.get_facecolor() for bar in ax.patches]
+    plt.close(fig)
+
+    assert ticks == [values[0]]
+    assert len(set(colours[:3])) == 1
+    assert white not in colours[:3]
+
+
+@pytest.mark.parametrize("mode", VALID_MODES)
+def test_count_colour_scale(mode: str) -> None:
+    """Test the count colour scale spans 1 to the maximum count.
+
+    Args:
+        mode: Chart mode.
+    """
+    chart_data, fig, _ = dataclock(subset_data, "Date_Time", mode=mode)
+    colorbar = fig.axes[1]
+    ticks = list(colorbar.get_yticks())
+    plt.close(fig)
+
+    assert colorbar.get_ylim() == (1, chart_data["count"].max())
+    assert ticks == sorted(set(ticks))
+    assert ticks[0] == 1
+    assert ticks[-1] == chart_data["count"].max()
+
+
+def test_float_sum_ticks() -> None:
+    """Test float sum colorbar ticks end at the maximum value."""
+    data = pd.DataFrame({"Date_Time": three_hours, "Value": [1.25, 2.5, 3.3]})
+    chart_data, fig, _ = dataclock(
+        data, "Date_Time", "Value", "sum", mode="DOW_HOUR"
+    )
+    ticks = list(fig.axes[1].get_yticks())
+    plt.close(fig)
+
+    assert chart_data["sum"].dtype == "float64"
+    assert ticks[0] == 1.25
+    assert ticks[-1] == pytest.approx(3.3)
+
+
+@pytest.mark.parametrize(
+    ("dtype", "agg", "expected"),
+    [
+        ("bool", "sum", [1, 0, 1]),
+        ("bool", "mean", [1.0, 0.0, 1.0]),
+        ("bool", "max", [1, 0, 1]),
+        ("boolean", "sum", [1, 0, 1]),
+    ],
+)
+def test_bool_aggregation(dtype: str, agg: str, expected: list[float]) -> None:
+    """Test a bool agg_column can be aggregated (e.g. sum counts True values).
+
+    Args:
+        dtype: Bool dtype of the aggregation column.
+        agg: Aggregation function name.
+        expected: Expected aggregation values for the three populated bins.
+    """
+    data = pd.DataFrame(
+        {"Date_Time": three_hours, "Flag": [True, False, True]}
+    ).astype({"Flag": dtype})
+    for chart in (dataclock, line_chart):
+        chart_data, fig, _ = chart(
+            data,
+            "Date_Time",
+            "Flag",
+            agg,  # type: ignore[arg-type]
+            mode="DOW_HOUR",
+        )
+        plt.close(fig)
+
+        assert chart_data[agg].iloc[:3].tolist() == expected
+
+
+def test_title_font_scaling() -> None:
+    """Test title text is scaled once & does not overlap on a large figure."""
+    _, fig, ax = dataclock(
+        subset_data, "Date_Time", mode="DAY_HOUR", chart_period="Period"
+    )
+    font_scale_factor = fig.get_figwidth() / 11
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+
+    title, subtitle, period, _ = (
+        text for text in ax.texts if text.get_transform() == fig.transFigure
+    )
+    extents = [
+        text.get_window_extent(renderer).transformed(
+            fig.transFigure.inverted()
+        )
+        for text in (title, subtitle, period)
+    ]
+    plt.close(fig)
+
+    assert font_scale_factor > 1
+    assert title.get_fontsize() == pytest.approx(14 * font_scale_factor)
+    assert subtitle.get_fontsize() == pytest.approx(12 * font_scale_factor)
+    # title above subtitle above period, all inside the figure
+    assert extents[0].y0 > extents[1].y1
+    assert extents[1].y0 > extents[2].y1
+    for extent in extents:
+        assert 0 <= extent.x0 < extent.x1 <= 1
+        assert 0 <= extent.y0 < extent.y1 <= 1
+
+
+@pytest.mark.parametrize("mode", VALID_MODES)
+def test_aggregate_zero_filled(mode: str) -> None:
+    """Test aggregate_temporal_columns fills empty temporal bins with 0.
+
+    Args:
+        mode: Chart mode.
+    """
+    data = assign_temporal_columns(subset_data, "Date_Time", mode)
+    result = aggregate_temporal_columns(data, "Date_Time", "count", mode)
+
+    assert list(result.columns) == ["ring", "wedge", "count"]
+    assert result["count"].notna().all()
+    assert result["count"].sum() == len(subset_data)
+    if mode in ("YEAR_MONTH", "YEAR_WEEK"):
+        # a two week subset leaves most months & weeks empty
+        assert result["count"].eq(0).any()

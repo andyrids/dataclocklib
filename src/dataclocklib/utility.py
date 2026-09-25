@@ -43,8 +43,11 @@ def add_colorbar(
     cmap_reverse: bool,
     vmax: float,
     dtype: DTypeLike = np.float64,
+    vmin: float = 1,
 ) -> Colorbar:
     """Add a colorbar to a figure, sharing the provided axis.
+
+    Values below vmin and NaN values are mapped to white.
 
     Args:
         ax (Axes): Chart Axis.
@@ -53,16 +56,18 @@ def add_colorbar(
         cmap_reverse (bool): Reverse cmap colors flag.
         vmax (float): Maximum value of the colorbar.
         dtype (DTypeLike, optional): Data type for colorbar values.
+        vmin (float, optional): Minimum value of the colorbar.
 
     Returns:
         A Colorbar object with a cmap and normalised cmap.
     """
-    colorbar_ticks = np.linspace(1, vmax, 5, dtype=dtype)
+    # unique, as integer ticks over a narrow range can repeat
+    colorbar_ticks = np.unique(np.linspace(vmin, vmax, 5, dtype=dtype))
 
     cmap = load_cmap(cmap_name, cmap_type="continuous", reverse=cmap_reverse)
-    # values below the colorbar minimum (1) are plotted as white
-    cmap = cmap.with_extremes(under="w")
-    cmap_norm = Normalize(1, vmax)
+    # values below the colorbar minimum & NaN (empty bins) are plotted as white
+    cmap = cmap.with_extremes(under="w", bad="w")
+    cmap_norm = Normalize(vmin, vmax)
 
     colorbar = fig.colorbar(
         ScalarMappable(norm=cmap_norm, cmap=cmap),
@@ -167,7 +172,7 @@ def aggregate_temporal_columns(
 
     Groups the DataFrame by the temporal 'ring' and 'wedge' columns,
     before applying the aggregate function to the chosen aggregation
-    column.
+    column. Missing ring/wedge combinations are filled with 0.
 
     NOTE: The 'ring' & 'wedge' columns are assigned by the utility function
     assign_temporal_columns.
@@ -188,6 +193,34 @@ def aggregate_temporal_columns(
     Returns:
         A DataFrame with aggregate values in a new column named after the
         aggregate function.
+    """
+    data_agg = _aggregate_temporal_columns(data, agg_column, agg, mode)
+
+    # replace NaN values created for missing ring/wedge combinations
+    return data_agg.fillna(0)
+
+
+def _aggregate_temporal_columns(
+    data: DataFrame, agg_column: str, agg: Aggregation, mode: Mode
+) -> DataFrame:
+    """Aggregate values in agg_column, leaving empty temporal bins as NaN.
+
+    Args:
+        data (DataFrame): DataFrame containing data to aggregate.
+        agg_column (str): DataFrame Column to aggregate.
+        agg (Aggregation): Aggregation function; 'count', 'max', 'mean',
+            'median', 'min' & 'sum'.
+        mode (Mode): A mode key representing the temporal bins used in the
+            chart; 'YEAR_MONTH', 'YEAR_WEEK', 'WEEK_DAY', 'DOW_HOUR' &
+            'DAY_HOUR'.
+
+    Raises:
+        ModeError: Unexpected mode value is passed.
+        ValueError: Missing 'ring' & 'wedge' columns.
+
+    Returns:
+        A DataFrame with aggregate values in a new column named after the
+        aggregate function, with NaN for missing ring/wedge combinations.
     """
     columns = ["ring", "wedge"]
     if not set(columns).issubset(data.columns):
@@ -221,10 +254,7 @@ def aggregate_temporal_columns(
     )
 
     # populate any rows for missing ring/wedge combinations
-    data_agg = data_agg.set_index(columns).reindex(product_idx).reset_index()
-
-    # replace NaN values created for missing missing ring/wedge combinations
-    return data_agg.fillna(0)
+    return data_agg.set_index(columns).reindex(product_idx).reset_index()
 
 
 def assign_temporal_columns(

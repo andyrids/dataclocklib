@@ -1,11 +1,13 @@
 """Exception module for chart creation errors.
 
 Classes:
-    AggregationColumnError: Raised on missing aggregation column.
+    AggregationColumnError: Raised on missing or unsuitable (non-numeric or
+        reserved name) aggregation column.
     AggregationFunctionError: Raised on unexpected aggregation function.
     EmptyDataFrameError: Raised on empty DataFrame.
     ModeError: Raised on incorrect chart mode value.
-    MissingDatetimeError: Raised on missing expected datetime64 dtype.
+    MissingDatetimeError: Raised on missing expected datetime64 dtype or
+        missing (NaT) datetimes.
 
 License:
     SPDX-License-Identifier: GPL-3.0-or-later
@@ -21,15 +23,21 @@ from pandas import DataFrame  # noqa: TC002
 
 
 class AggregationColumnError(ValueError):
-    """Raised on missing aggregation column."""
+    """Raised on a missing or unsuitable aggregation column."""
 
-    def __init__(self, agg: str) -> None:
+    def __init__(self, agg: str, reason: str | None = None) -> None:
         """Initialise AggregationColumnError exception.
 
         Args:
             agg (str): Aggregation function.
+            reason (str, optional): Why the agg_column is unsuitable; the
+                agg_column is reported as missing if None.
         """
-        msg = f"Expected agg_column for aggregation function {agg}."
+        if reason is None:
+            msg = f"Expected agg_column for aggregation function {agg}."
+        else:
+            msg = f"Unsuitable agg_column for aggregation function {agg}: "
+            msg += f"{reason}."
         super().__init__(msg)
 
 
@@ -75,13 +83,20 @@ class ModeError(ValueError):
 
 
 class MissingDatetimeError(ValueError):
-    """Raised on missing expected datetime64 dtype."""
+    """Raised on missing expected datetime64 dtype or missing datetimes."""
 
-    def __init__(self, column: str) -> None:
+    def __init__(self, column: str, reason: str | None = None) -> None:
         """Initialise MissingDatetimeError exception.
 
         Args:
-            column (str): Name of the column without a naive datetime64 dtype.
+            column (str): Name of the invalid date_column.
+            reason (str, optional): Why the date_column is invalid; the
+                column is reported as not naive datetime64 dtype if None.
         """
-        msg = f"Expected naive datetime64 dtype for date_column ({column})."
+        if reason is None:
+            msg = (
+                f"Expected naive datetime64 dtype for date_column ({column})."
+            )
+        else:
+            msg = f"Invalid date_column ({column}): {reason}."
         super().__init__(msg)
