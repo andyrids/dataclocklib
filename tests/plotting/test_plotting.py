@@ -27,16 +27,17 @@ import pathlib
 
 import pandas as pd
 import pytest
+from matplotlib.figure import Figure
 
 from dataclocklib.charts import dataclock
 
-tests_directory = pathlib.Path("__file__").parent / "tests"
+tests_directory = pathlib.Path(__file__).parent.parent
 data_file = tests_directory / "data" / "traffic_data.parquet.gzip"
 traffic_data = pd.read_parquet(data_file.as_posix())
 
 
 @pytest.mark.mpl_image_compare
-def test_baseline_year_month_chart():
+def test_baseline_year_month_chart() -> Figure:
     """Image comparison test function.
 
     This function generates a baseline image, after running the pytest
@@ -67,7 +68,7 @@ def test_baseline_year_month_chart():
 
 
 @pytest.mark.mpl_image_compare
-def test_baseline_week_day_chart():
+def test_baseline_week_day_chart() -> Figure:
     """Image comparison test function.
 
     This function generates a baseline image, after running the pytest
@@ -100,7 +101,7 @@ def test_baseline_week_day_chart():
 
 
 @pytest.mark.mpl_image_compare
-def test_baseline_dow_hour_chart():
+def test_baseline_dow_hour_chart() -> Figure:
     """Image comparison test function.
 
     This function generates a baseline image, after running the pytest
@@ -131,7 +132,7 @@ def test_baseline_dow_hour_chart():
 
 
 @pytest.mark.mpl_image_compare
-def test_baseline_day_hour_chart():
+def test_baseline_day_hour_chart() -> Figure:
     """Image comparison test function.
 
     This function generates a baseline image, after running the pytest

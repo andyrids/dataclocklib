@@ -1,11 +1,47 @@
+<!-- pyml disable MD024 -->
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<!-- Added | Changed | Deprecated | Removed | Fixed -->
+> [!NOTE]
+>
+> - `[SemVer] - yyyy-mm-dd` or `[Unreleased]` for release heading
+> - `Added` for new features.
+> - `Changed` for changes in existing functionality.
+> - `Deprecated` for soon-to-be removed features.
+> - `Removed` for now removed features.
+> - `Fixed` for any bug fixes.
+> - `Security` in case of vulnerabilities.
+
+## [Unreleased]
+
+### Changed
+
+- Minimum supported versions are now Python 3.11 and pandas 3.0.
+- Lint, format, typing, markdown & secrets checks use pkgdx standards via prek hooks.
+- CI runs the prek hooks instead of standalone Ruff steps.
+- Chart functions refactored into smaller private helpers; public API is unchanged.
+- `MissingDatetimeError` message now states that a naive datetime64 dtype is expected.
+- `assign_temporal_columns` now raises `ModeError` (a `ValueError`) for an unexpected
+  mode value; it previously raised a `KeyError` from the underlying `astype` call.
+
+### Removed
+
+- Redundant Ruff and Pyright configuration from `pyproject.toml`.
+
+### Fixed
+
+- Naive datetime64 columns with non-nanosecond resolution (us, ms, s) are now accepted.
+- Matplotlib `Colormap.set_under` pending deprecation warning.
+- Test data paths no longer depend on the pytest working directory.
+- 'WEEK_DAY' rings use the ISO year, so days at the turn of a year are no longer
+  merged into the wrong week (e.g. 2013-12-30 is now in ring 201401, not 201301).
+- 'YEAR_WEEK' weeks no longer cross calendar years; early-January days in ISO week
+  52/53 are placed in week 1 and late-December days in ISO week 1 in week 52.
+- 'YEAR_WEEK' & 'WEEK_DAY' rings are drawn in chronological order.
 
 ## [0.2.0] - 2025-01-23
 
@@ -31,7 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dynamic polar axis label font scaling based on number of rings.
 - Configuration files (`dataclocklib/config/`) for default chart title & subtitle creation.
 - Dataclock *kwargs* `**fg_kw` added, which aligns with `pyplot.subplots`.
-  - Figure size (figsize) parameter will be overwritten and must be modified with the returned Figure object.
+  - Figure size (figsize) parameter will be overwritten and must be modified with the returned
+    Figure object.
 
 ### Changed
 
@@ -52,7 +89,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Parameter 'default_text' triggers default chart title and subtitle annotations if chart_title & chart_subtitle are None.
+- Parameter 'default_text' triggers default chart title and subtitle annotations if chart_title &
+  chart_subtitle are None.
 - Parameter 'chart_period' for optional annotation below subtitle for dataset reporting period.
 - Raises ValueError if data[date_column] Series does not have not a 'datetime64[ns]' data type.
 - Raises ValueError if data is an empty DataFrame.

@@ -4,7 +4,7 @@ Author: Andrew Ridyard.
 
 License: GNU General Public License v3 or later.
 
-Copyright (C): 2025.
+Copyright (C): 2026.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ sys.path.insert(0, package_dir.as_posix())
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "dataclocklib"
-copyright = "2025, Andrew Ridyard"
+project_copyright = "2026, Andrew Ridyard"
 author = "Andrew Ridyard"
 
 # The full version, including alpha/beta/rc tags

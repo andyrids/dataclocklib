@@ -1,12 +1,12 @@
 [project]
 name = "dataclocklib"
-description = "Data clock charts using matplotlib."
-authors = [{name = "Andrew Ridyard", email = "andrew.ridyard@proton.me"}]
-maintainers = [{name = "Andrew Ridyard", email = "andrew.ridyard@proton.me"}]
+description = "Dataclock charts using matplotlib."
+authors = [{name = "Andrew Ridyard", email = "developer.surface832@passmail.com"}]
+maintainers = [{name = "Andrew Ridyard", email = "developer.surface832@passmail.com"}]
 dynamic = ["version"]
 license = { file = "LICENSE" }
 readme = {file = "README.md", content-type = "text/markdown"}
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers=[
     # 3 - Alpha | 4 - Beta | 5 - Production/Stable
     "Development Status :: 5 - Production/Stable",
@@ -17,7 +17,6 @@ classifiers=[
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -26,17 +25,18 @@ classifiers=[
 keywords = ["matplotlib", "dataclock", "visualisation", "analysis"]
 dependencies = [
     "matplotlib",
-    "pandas[parquet]>=2.2.2",
+    "pandas[parquet]>=3.0",
     "pypalettes>=0.1.5",
 ]
 
 [dependency-groups]
 dev = [
     "bump-my-version>=0.28.3",
+    "pandas-stubs>=3.0",
+    "pkgdx>=0.3.0",
     "pytest>=8.3.3",
     "pytest-cov>=6.0.0",
     "pytest-mpl",
-    "ruff>=0.7.4",
 ]
 
 [project.optional-dependencies]
@@ -53,30 +53,9 @@ Issues = "https://github.com/andyrids/dataclocklib/issues"
 Documentation = "https://andyrids.github.io/dataclocklib/"
 Changelog = "https://github.com/andyrids/dataclocklib/blob/main/CHANGELOG.md"
 
-[tool.ruff]
-exclude = ["*.ipynb"]
-indent-width = 4
-line-length = 79
-
-[tool.ruff.format]
-indent-style = "space"
-line-ending = "auto"
-quote-style = "double"
-
-[tool.ruff.lint]
-select = [
-    "D1",  # pydocstyle
-    "E",   # pycodestyle
-    "ERA", # commented out code
-    "I",   # isort
-    "W",   # pycodestyle
-]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
-[tool.pyright]
-reportGeneralTypeIssues = false
+[[tool.uv.index]]
+name = "gitlab"
+url = "https://gitlab.com/api/v4/projects/82928123/packages/pypi/simple"
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
@@ -114,6 +93,9 @@ metadata_version = "2.4"
 license-files = []
 
 [tool.setuptools_scm]
+
+[tool.uv.sources]
+pkgdx = { index = "gitlab" }
 # this section enables setuptools_scm
 # can use:
 # git tag -a v0.1.4 -m "chore: tag version update."

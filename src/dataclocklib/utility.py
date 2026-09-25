@@ -22,7 +22,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Functions:
     add_colorbar: Add a colorbar to a figure, using the provided axis.
     add_text: Create annotation text on an Axes.
-    assign_ring_wedge_columns: Assign ring & wedge columns to a DataFrame.
+    add_wedge_labels: Add scaled and rotated labels around each wedge.
+    aggregate_temporal_columns: Aggregate values by ring & wedge columns.
+    assign_temporal_columns: Assign ring & wedge columns to a DataFrame.
     get_figure_dimensions: Calculate an optimal data clock figure size.
 
 Constants:
@@ -30,11 +32,10 @@ Constants:
 """
 
 import math
-from collections import defaultdict
-from typing import Optional, Sequence, Tuple, get_args
+from collections.abc import Iterable, Sequence
+from typing import Any, get_args
 
 import numpy as np
-from matplotlib import colormaps
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import Colorbar
@@ -42,13 +43,13 @@ from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 from numpy.typing import DTypeLike, NDArray
-from pandas import DataFrame, MultiIndex
-from pypalettes import load_cmap
+from pandas import DataFrame, MultiIndex, Series
+from pypalettes import load_cmap  # type: ignore[import-untyped]
 
 from dataclocklib.exceptions import ModeError
-from dataclocklib.typing import Aggregation, CmapNames, FontStyle, Mode
+from dataclocklib.typing import Aggregation, FontStyle, Mode
 
-VALID_STYLES: Tuple[FontStyle, ...] = get_args(FontStyle)
+VALID_STYLES: tuple[FontStyle, ...] = get_args(FontStyle)
 
 
 def add_colorbar(
@@ -64,10 +65,10 @@ def add_colorbar(
     Args:
         ax (Axes): Chart Axis.
         fig (Figure): Chart Figure.
-        dtype (DTypeLike): Colourbar values dtype.
-        cmap_name (CmapNames): Name of matplotlib colormap.
-        vmax (float): maximum value of the colorbar.
-        dtype (DTypeLike): Data type for colorbar values.
+        cmap_name (str): Name of matplotlib/PyPalettes colormap.
+        cmap_reverse (bool): Reverse cmap colors flag.
+        vmax (float): Maximum value of the colorbar.
+        dtype (DTypeLike, optional): Data type for colorbar values.
 
     Returns:
         A Colorbar object with a cmap and normalised cmap.
@@ -75,7 +76,8 @@ def add_colorbar(
     colorbar_ticks = np.linspace(1, vmax, 5, dtype=dtype)
 
     cmap = load_cmap(cmap_name, cmap_type="continuous", reverse=cmap_reverse)
-    cmap.set_under("w")
+    # values below the colorbar minimum (1) are plotted as white
+    cmap = cmap.with_extremes(under="w")
     cmap_norm = Normalize(1, vmax)
 
     colorbar = fig.colorbar(
@@ -99,7 +101,7 @@ def add_wedge_labels(
     ring_scale_factor: float,
     ring_text_spacing: float,
     max_radius: int,
-    theta: NDArray,
+    theta: NDArray[np.float64],
     width: float,
     wedge_labels: Sequence[str],
 ) -> None:
@@ -117,12 +119,12 @@ def add_wedge_labels(
         ring_scale_factor (float): Scale factor based on number of rings.
         ring_text_spacing (float): Text label distance from polar axis.
         max_radius (int): Maximum radius (unique rings + 1).
-        theta (NDArray): Angles (radians) for each data clock wedge.
+        theta (NDArray[np.float64]): Angles (radians) for each wedge.
         width (float): Width of each wedge (2 * Pi / number of wedges).
         wedge_labels (Sequence[str]): Label text for each wedge.
 
-        Returns:
-            None
+    Returns:
+        None
     """
     if ring_scale_factor > 3:
         ring_text_spacing = ring_text_spacing * (ring_scale_factor**0.61)
@@ -156,15 +158,16 @@ def add_wedge_labels(
 
 
 def add_text(
-    ax: Axes, x: float, y: float, text: Optional[str] = None, **kwargs
+    ax: Axes, x: float, y: float, text: str | None = None, **kwargs: Any
 ) -> Text:
     """Annotate a position on an axis denoted by xy with text.
 
     Args:
         ax (Axes): Axis to annotate.
-        x (int): Axis x position.
-        y (int): Axis y position.
-        text (str, optional): Text to annotate.
+        x (float): Axis x position.
+        y (float): Axis y position.
+        text (str, optional): Text to annotate; an empty string if None.
+        **kwargs (Any): Text properties passed to Axes.text.
 
     Returns:
         Text object with annotation.
@@ -188,8 +191,8 @@ def aggregate_temporal_columns(
     Args:
         data (DataFrame): DataFrame containing data to aggregate.
         agg_column (str): DataFrame Column to aggregate.
-        agg (Aggregation): Aggregation function; 'count', 'mean', 'median',
-            'mode' & 'sum'.
+        agg (Aggregation): Aggregation function; 'count', 'max', 'mean',
+            'median', 'min' & 'sum'.
         mode (Mode): A mode key representing the temporal bins used in the
             chart; 'YEAR_MONTH', 'YEAR_WEEK', 'WEEK_DAY', 'DOW_HOUR' &
             'DAY_HOUR'.
@@ -206,13 +209,17 @@ def aggregate_temporal_columns(
     if not set(columns).issubset(data.columns):
         raise ValueError(f"Expected DataFrame columns: {columns}")
 
-    unique_rings = data["ring"].unique()
+    unique_rings: Iterable[int] = data["ring"].unique()
+    unique_wedges: Iterable[int]
     match mode:
         case "YEAR_MONTH":
-            unique_wedges = tuple(range(1, 13))
+            unique_wedges = range(1, 13)
+        # week modes are drawn in chronological ring order
         case "YEAR_WEEK":
+            unique_rings = np.sort(data["ring"].unique())
             unique_wedges = range(1, 53)
         case "WEEK_DAY":
+            unique_rings = np.sort(data["ring"].unique())
             unique_wedges = range(0, 7)
         case "DOW_HOUR":
             unique_rings = range(0, 7)
@@ -223,7 +230,7 @@ def aggregate_temporal_columns(
             raise ModeError(mode, get_args(Mode))
 
     # groupby 'ring' & 'wedge' values and apply aggregate function agg
-    data_agg = data.groupby(columns, as_index=False)[agg_column].agg(agg)
+    data_agg = data.groupby(columns, as_index=False)[[agg_column]].agg(agg)
     data_agg = data_agg.set_axis([*columns, agg], axis="columns")
 
     # index with all possible combinations of ring & wedge values
@@ -248,6 +255,11 @@ def assign_temporal_columns(
     wedges, creating a set of temporal bins. These bins are assigned as 'ring'
     and 'wedge' columns.
 
+    'YEAR_WEEK' rings are calendar years, with ISO week numbers clamped so
+    that weeks never cross a calendar year boundary. 'WEEK_DAY' rings are ISO
+    year-weeks (YYYYWW), so a calendar-year filter can include a partial ISO
+    week from a neighbouring year (e.g. 2010-01-01 is in ring 200953).
+
     Args:
         data (DataFrame): DataFrame containing data to visualise.
         date_column (str): Name of DataFrame datetime64 column.
@@ -255,37 +267,41 @@ def assign_temporal_columns(
             temporal bins used in the chart; 'YEAR_MONTH',
             'YEAR_WEEK', 'WEEK_DAY', 'DOW_HOUR' & 'DAY_HOUR'.
 
+    Raises:
+        ModeError: Unexpected mode value is passed.
+
     Returns:
         A DataFrame with 'ring' & 'wedge' columns assigned.
     """
-    # dict map for ring & wedge features based on mode
-    mode_map = defaultdict(dict)
-    # year | January - December
-    if mode == "YEAR_MONTH":
-        mode_map[mode]["ring"] = data[date_column].dt.year
-        mode_map[mode]["wedge"] = data[date_column].dt.month
-    # year | weeks 1 - 52
-    if mode == "YEAR_WEEK":
-        mode_map[mode]["ring"] = data[date_column].dt.year
-        week = data[date_column].dt.isocalendar().week
-        week[week == 53] = 52
-        mode_map[mode]["wedge"] = week
-    # weeks 1 - 52 | Monday - Sunday
-    if mode == "WEEK_DAY":
-        week = data[date_column].dt.isocalendar().week
-        year = data[date_column].dt.year
-        mode_map[mode]["ring"] = week + year * 100
-        mode_map[mode]["wedge"] = data[date_column].dt.day_of_week
-    # days 1 - 7 (Monday - Sunday) | 00:00 - 23:00
-    if mode == "DOW_HOUR":
-        mode_map[mode]["ring"] = data[date_column].dt.day_of_week
-        mode_map[mode]["wedge"] = data[date_column].dt.hour
-    # days 1 - 365 | 00:00 - 23:00
-    if mode == "DAY_HOUR":
-        mode_map[mode]["ring"] = data[date_column].dt.strftime("%Y%j")
-        mode_map[mode]["wedge"] = data[date_column].dt.hour
+    dates = data[date_column].dt
+    ring: Series
+    wedge: Series
+    match mode:
+        # year | January - December
+        case "YEAR_MONTH":
+            ring, wedge = dates.year, dates.month
+        # calendar year | weeks 1 - 52 (ISO weeks clamped to the calendar
+        # year; ISO week 53 is merged into week 52)
+        case "YEAR_WEEK":
+            week = dates.isocalendar().week
+            week = week.mask(dates.month.eq(1) & week.ge(52), 1)
+            week = week.mask(dates.month.eq(12) & week.eq(1), 52)
+            ring, wedge = dates.year, week.where(week != 53, 52)
+        # ISO year-week (YYYYWW) | Monday - Sunday
+        case "WEEK_DAY":
+            iso = dates.isocalendar()
+            ring = iso.year * 100 + iso.week
+            wedge = dates.day_of_week
+        # days 1 - 7 (Monday - Sunday) | 00:00 - 23:00
+        case "DOW_HOUR":
+            ring, wedge = dates.day_of_week, dates.hour
+        # days 1 - 365 | 00:00 - 23:00
+        case "DAY_HOUR":
+            ring, wedge = dates.strftime("%Y%j"), dates.hour
+        case _:
+            raise ModeError(mode, get_args(Mode))
 
-    return data.assign(**mode_map[mode]).astype({"ring": "int64"})
+    return data.assign(ring=ring, wedge=wedge).astype({"ring": "int64"})
 
 
 def get_figure_dimensions(wedges: int) -> tuple[float, float]:
@@ -298,14 +314,14 @@ def get_figure_dimensions(wedges: int) -> tuple[float, float]:
     NOTE: The minimum figure size is capped at (10.0, 10.0).
 
     Example:
-      >>> calculate_figure_dimensions(168)
-      (11, 11)
+        >>> get_figure_dimensions(168)
+        (11.0, 11.0)
 
     Args:
-      wedges: Number of wedges (number of rings * wedges per ring).
+        wedges (int): Number of wedges (number of rings * wedges per ring).
 
     Returns:
-      A tuple containing the height & width of the square figure in inches.
+        A tuple containing the height & width of the square figure in inches.
     """
     space_needed = wedges * 0.70
     figure_size = float(max(math.ceil(math.sqrt(space_needed)), 10))

@@ -1,5 +1,6 @@
 # Data Clock Visualisation Library
 
+<!-- pyml disable-next-line line-length -->
 ![PyPI - Version](https://img.shields.io/pypi/v/dataclocklib?style=plastic) ![PyPI - Downloads](https://img.shields.io/pypi/dm/dataclocklib?style=plastic) ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fandyrids%2Fdataclocklib%2Fmain%2Fpyproject.toml&style=plastic) ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/andyrids/dataclocklib/ci.yml?branch=main&style=plastic&logo=pytest&logoColor=%230A9EDC&label=pytest)
 ![GitHub deployments](https://img.shields.io/github/deployments/andyrids/dataclocklib/github-pages?style=plastic&&logo=sphinx&label=sphinx)
 
@@ -7,17 +8,21 @@
 
 This library allows the user to create data clock graphs, using the matplotlib Python library.
 
-Data clocks visually summarise temporal data in two dimensions, revealing seasonal or cyclical patterns and trends over time. A data clock is a circular chart that divides a larger unit of time into rings and subdivides it by a smaller unit of time into wedges, creating a set of temporal bins.
+Data clocks visually summarise temporal data in two dimensions, revealing seasonal or cyclical
+patterns and trends over time. A data clock is a circular chart that divides a larger unit of time
+into rings and subdivides it by a smaller unit of time into wedges, creating a set of temporal
+bins.
 
-These temporal bins are symbolised using graduated colors that correspond to a count or aggregated value taking place in each time period.
+These temporal bins are symbolised using graduated colors that correspond to a count or aggregated
+value taking place in each time period.
 
 The table below details the currently supported chart modes and the corresponding rings and wedges:
 
 | Mode       | Rings            | Wedges           | Description                       |
 |------------|------------------|------------------|-----------------------------------|
 | YEAR_MONTH | Years            | Months           | Years / January - December.       |
-| YEAR_WEEK  | Years            | Weeks            | Years / weeks 1 - 52.             |
-| WEEK_DAY   | Weeks            | Days of the week | Weeks 1 - 52 / Monday - Sunday.   |
+| YEAR_WEEK  | Years            | Weeks            | Calendar years / weeks 1 - 52.    |
+| WEEK_DAY   | Weeks            | Days of the week | ISO weeks / Monday - Sunday.      |
 | DOW_HOUR   | Days of the week | Hour of day      | Monday - Sunday / 24 hours.       |
 | DAY_HOUR   | Days             | Hour of day      | Days 1 - 356 / 24 hours.          |
 
@@ -41,7 +46,7 @@ chart_data, fig, ax = dataclock(
     mode="DOW_HOUR",
     spine_color="darkslategrey",
     grid_color="black",
-    default_text=False
+    default_text=False,
 )
 ```
 
@@ -61,7 +66,7 @@ chart_data, fig, ax = dataclock(
     mode="DOW_HOUR",
     spine_color="darkslategrey",
     grid_color="black",
-    default_text=True
+    default_text=True,
 )
 ```
 
@@ -86,7 +91,7 @@ chart_data, fig, ax = dataclock(
     chart_subtitle="**CUSTOM SUBTITLE**",
     chart_period="**CUSTOM PERIOD**",
     chart_source="Source: UK Department for Transport",
-    dpi=150
+    dpi=150,
 )
 ```
 
@@ -115,12 +120,11 @@ chart_data, fig, ax = dataclock(
     chart_subtitle=None,
     chart_period="Period: 2010",
     chart_source="Source: https://data.dft.gov.uk/road-accidents-safety-data/dft-road-casualty-statistics-collision-last-5-years.csv",
-    dpi=300
+    dpi=300,
 )
 ```
 
 ![Data clock chart](https://raw.githubusercontent.com/andyrids/dataclocklib/main/docs/source/_static/images/sphinx_guide_chart_4.png)
-
 
 ## Installation
 

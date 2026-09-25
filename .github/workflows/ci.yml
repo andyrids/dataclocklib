@@ -10,16 +10,15 @@ on:
 
 jobs:
   setup-uv:
-    name: Install uv & Lint
+    name: Install uv, Hooks & Tests
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
-          version: "0.5.16"
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
@@ -31,11 +30,8 @@ jobs:
       - name: Install Dependencies
         run: uv sync --all-extras --dev
 
-      - name: Ruff Lint
-        run: uv run ruff check --output-format=github
-
-      - name: Ruff Format
-        run: uv run ruff format --diff
+      - name: Hooks (pkgdx standards)
+        run: uv run prek run --all-files
 
       - name: Unit Tests
         run: uv run pytest --mpl --cov-report term --cov=dataclocklib
