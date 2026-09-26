@@ -34,7 +34,7 @@ extensions = [
 
 # List of patterns, relative to source directory, that match files and
 # exclude_patterns; "_build", "Thumbs.db", ".DS_Store"
-exclude_patterns = []
+exclude_patterns: list[str] = []
 
 # autodoc: types are rendered in the parameter descriptions, not the signature
 autodoc_typehints = "description"
