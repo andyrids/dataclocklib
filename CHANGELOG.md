@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > - `Fixed` for any bug fixes.
 > - `Security` in case of vulnerabilities.
 
+## [Unreleased]
+
+### Changed
+
+- Package metadata improved for discoverability: a more descriptive summary, expanded
+  keywords (e.g. `radial-heatmap`, `time-series`, `visualization`) and the
+  `Topic :: Scientific/Engineering :: Visualization`,
+  `Topic :: Scientific/Engineering :: Information Analysis` and `Typing :: Typed` classifiers.
+
 ## [0.3.0] - 2026-09-26
 
 ### Breaking changes

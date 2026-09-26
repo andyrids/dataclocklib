@@ -2,7 +2,7 @@
 
 [[repos]]
 repo = "https://gitlab.com/andyrids/pkgdx"
-rev = "v0.3.0"
+rev = "v0.4.0"
 
 [[repos.hooks]]
 id = "pkgdx-lint"
@@ -27,8 +27,6 @@ repo = "local"
 id = "pkgdx-typing"
 name = "Typing [Mypy]"
 entry = "uv run pkgdx-typing-hook"
-# workaround: pkgdx v0.3.0 ships this hook with no target (args = [])
-args = ["src"]
 language = "system"
 types_or = ["python", "pyi"]
 exclude = "tests/"
