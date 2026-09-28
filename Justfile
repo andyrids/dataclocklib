@@ -45,7 +45,7 @@ symlink-agents:
 release PART:
     git fetch --prune
     git switch main && git pull
-    uv run run bump-my-version {{PART}}
+    uv run bump-my-version {{PART}}
     git push --atomic origin main --follow-tags
     git switch develop && git pull
     git merge --ff-only main
