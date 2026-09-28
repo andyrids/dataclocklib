@@ -5,6 +5,7 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 set shell := ["cmd.exe", "/c"]
 
 set dotenv-load := true
+set lists := true
 
 [default]
 @_:
@@ -42,10 +43,11 @@ symlink-agents:
 
 [doc("Bump version, tag & trigger release")]
 [group("DEV")]
-release PART:
+[arg("PART", pattern=["major", "minor", "patch"])]
+release PART *FLAGS:
     git fetch --prune
     git switch main && git pull
-    uv run bump-my-version {{PART}}
+    uv run bump-my-version bump {{PART}} {{FLAGS}}
     git push --atomic origin main --follow-tags
     git switch develop && git pull
     git merge --ff-only main
