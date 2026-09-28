@@ -1,6 +1,6 @@
 [project]
 name = "dataclocklib"
-description = "Dataclock charts using matplotlib."
+description = "Data clock charts (radial temporal heatmaps) for pandas time series, built on matplotlib."
 authors = [{name = "Andrew Ridyard", email = "developer.surface832@passmail.com"}]
 maintainers = [{name = "Andrew Ridyard", email = "developer.surface832@passmail.com"}]
 dynamic = ["version"]
@@ -21,9 +21,29 @@ classifiers=[
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Visualization",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
 ]
-keywords = ["matplotlib", "dataclock", "visualisation", "analysis"]
+keywords = [
+    "dataclock",
+    "data-clock",
+    "data clock",
+    "matplotlib",
+    "pandas",
+    "visualisation",
+    "visualization",
+    "temporal",
+    "time-series",
+    "timeseries",
+    "polar-chart",
+    "radial-heatmap",
+    "circular-heatmap",
+    "calendar-heatmap",
+    "seasonality",
+    "cyclical-patterns",
+]
 dependencies = [
     "matplotlib>=3.10",
     "pandas[parquet]>=3.0",

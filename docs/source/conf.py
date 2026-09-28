@@ -34,7 +34,10 @@ extensions = [
 
 # List of patterns, relative to source directory, that match files and
 # exclude_patterns; "_build", "Thumbs.db", ".DS_Store"
-exclude_patterns = []
+exclude_patterns: list[str] = []
+
+# theme template overrides (e.g. version in the sidebar)
+templates_path = ["_templates"]
 
 # autodoc: types are rendered in the parameter descriptions, not the signature
 autodoc_typehints = "description"
@@ -49,5 +52,4 @@ nb_execution_mode = "off"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_theme_options = {"version_selector": True}
 html_static_path = ["_static"]

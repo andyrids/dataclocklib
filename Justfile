@@ -40,6 +40,17 @@ git-prune:
 symlink-agents:
     @uv run python -c "import pathlib; p=pathlib.Path('CLAUDE.md'); p.unlink(missing_ok=True); p.symlink_to('AGENTS.md')"
 
+[doc("Bump version, tag & trigger release")]
+[group("DEV")]
+release PART:
+    git fetch --prune
+    git switch main && git pull
+    uv run run bump-my-version {{PART}}
+    git push --atomic origin main --follow-tags
+    git switch develop && git pull
+    git merge --ff-only main
+    git push origin develop
+
 [doc("Build Sphinx HTML documentation (warnings treated as errors)")]
 [group("DOCS")]
 docs:
